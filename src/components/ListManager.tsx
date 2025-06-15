@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu';
 import ToolbarPanel from './ToolbarPanel';
 import SeparatorDropdown from './SeparatorDropdown';
 import ArchiveRecord from './ArchiveRecord';
@@ -26,6 +26,11 @@ interface ListItem {
   separatorText?: string;
   separatorColor?: string;
   separatorAlign?: 'left' | 'center' | 'right';
+  bold?: boolean;
+  italic?: boolean;
+  strikethrough?: boolean;
+  fontSize?: number;
+  textColor?: string;
 }
 
 interface ArchiveEntry {
@@ -52,6 +57,12 @@ const ListManager: React.FC = () => {
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [dataManager] = useState(() => new DataManager());
   const [cryptoManager] = useState(() => new CryptoManager());
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [renamingTabId, setRenamingTabId] = useState<string>('');
+  const [newTabTitle, setNewTabTitle] = useState('');
+  const [clearArchiveDialogOpen, setClearArchiveDialogOpen] = useState(false);
+  const [issueDialogOpen, setIssueDialogOpen] = useState(false);
+  const [issuedTo, setIssuedTo] = useState('');
 
   useEffect(() => {
     initializeTabs();
@@ -71,13 +82,15 @@ const ListManager: React.FC = () => {
         setActiveTab('1');
         await dataManager.saveTabs(defaultTabs);
       } else {
-        // Ensure all tabs have archive property
-        const updatedTabs = savedTabs.map(tab => ({
-          ...tab,
-          archive: tab.archive || []
-        }));
-        setTabs(updatedTabs);
-        setActiveTab(updatedTabs[0].id);
+        // Ensure correct tab order and titles
+        const orderedTabs = [
+          { ...savedTabs.find(t => t.id === '1') || { id: '1', items: [], notes: '', archive: [] }, title: 'Основной список' },
+          { ...savedTabs.find(t => t.id === '2') || { id: '2', items: [], notes: '', archive: [] }, title: 'Выданные' },
+          { ...savedTabs.find(t => t.id === '3') || { id: '3', items: [], notes: '', archive: [] }, title: 'Заметки' },
+          { ...savedTabs.find(t => t.id === '4') || { id: '4', items: [], notes: '', archive: [] }, title: 'Архив' }
+        ];
+        setTabs(orderedTabs);
+        setActiveTab('1');
       }
     } catch (error) {
       console.error('Error initializing tabs:', error);
@@ -99,7 +112,12 @@ const ListManager: React.FC = () => {
       columns: ['', '', '', '', ''],
       checked: false,
       issued: false,
-      type: 'item'
+      type: 'item',
+      bold: false,
+      italic: false,
+      strikethrough: false,
+      fontSize: 14,
+      textColor: '#000000'
     };
     
     const updatedTabs = tabs.map(tab =>
@@ -280,6 +298,43 @@ const ListManager: React.FC = () => {
     }
   };
 
+  const clearArchive = () => {
+    const archiveTab = tabs.find(t => t.id === '4');
+    if (archiveTab) {
+      const updatedTabs = tabs.map(t =>
+        t.id === '4' ? { ...t, archive: [] } : t
+      );
+      setTabs(updatedTabs);
+      saveTabs();
+    }
+    setClearArchiveDialogOpen(false);
+  };
+
+  const handleTabRename = () => {
+    const updatedTabs = tabs.map(tab =>
+      tab.id === renamingTabId ? { ...tab, title: newTabTitle } : tab
+    );
+    setTabs(updatedTabs);
+    saveTabs();
+    setRenameDialogOpen(false);
+    setRenamingTabId('');
+    setNewTabTitle('');
+  };
+
+  const openRenameDialog = (tabId: string, currentTitle: string) => {
+    setRenamingTabId(tabId);
+    setNewTabTitle(currentTitle);
+    setRenameDialogOpen(true);
+  };
+
+  const handleIssueItems = () => {
+    if (issuedTo.trim()) {
+      issueItems(activeTab, issuedTo.trim());
+      setIssueDialogOpen(false);
+      setIssuedTo('');
+    }
+  };
+
   const getCurrentTab = () => tabs.find(tab => tab.id === activeTab);
 
   const filteredItems = (items: ListItem[]) => {
@@ -309,54 +364,111 @@ const ListManager: React.FC = () => {
     setDraggedItem(null);
   };
 
+  const getItemStyle = (item: ListItem) => {
+    let style: React.CSSProperties = {};
+    if (item.bold) style.fontWeight = 'bold';
+    if (item.italic) style.fontStyle = 'italic';
+    if (item.strikethrough) style.textDecoration = 'line-through';
+    if (item.fontSize) style.fontSize = `${item.fontSize}px`;
+    if (item.textColor) style.color = item.textColor;
+    return style;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto p-4">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-4 mb-4">
             {tabs.map(tab => (
-              <TabsTrigger key={tab.id} value={tab.id}>
-                {tab.title}
-              </TabsTrigger>
+              <ContextMenu key={tab.id}>
+                <ContextMenuTrigger asChild>
+                  <TabsTrigger 
+                    value={tab.id}
+                    onTouchStart={(e) => {
+                      const timer = setTimeout(() => {
+                        openRenameDialog(tab.id, tab.title);
+                      }, 500);
+                      e.currentTarget.dataset.timer = timer.toString();
+                    }}
+                    onTouchEnd={(e) => {
+                      const timer = e.currentTarget.dataset.timer;
+                      if (timer) clearTimeout(parseInt(timer));
+                    }}
+                  >
+                    {tab.title}
+                  </TabsTrigger>
+                </ContextMenuTrigger>
+                <ContextMenuContent>
+                  <ContextMenuItem onClick={() => openRenameDialog(tab.id, tab.title)}>
+                    Переименовать
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
             ))}
           </TabsList>
 
           {tabs.map(tab => (
             <TabsContent key={tab.id} value={tab.id} className="space-y-4">
-              {/* Toolbar Toggle */}
+              {/* Control buttons */}
               <div className="flex items-center justify-between">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setToolbarOpen(prev => ({ ...prev, [tab.id]: !prev[tab.id] }))}
-                >
-                  ✓ {toolbarOpen[tab.id] ? 'Скрыть панель' : 'Показать панель'}
-                </Button>
+                {/* Show toolbar toggle only for main list and notes tabs */}
+                {(tab.id === '1' || tab.id === '3') && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setToolbarOpen(prev => ({ ...prev, [tab.id]: !prev[tab.id] }))}
+                  >
+                    ✓ {toolbarOpen[tab.id] ? 'Скрыть панель' : 'Показать панель'}
+                  </Button>
+                )}
                 
-                {tab.title !== 'Заметки' && tab.title !== 'Архив' && (
+                {/* Archive clear button */}
+                {tab.id === '4' && (
+                  <Button
+                    variant="destructive"
+                    onClick={() => setClearArchiveDialogOpen(true)}
+                  >
+                    Очистить архив
+                  </Button>
+                )}
+                
+                {/* Action buttons for main list and issued tabs */}
+                {(tab.id === '1' || tab.id === '2') && (
                   <div className="flex space-x-2">
-                    <Button
-                      onClick={() => {
-                        const checkedItems = tab.items.filter(item => item.checked);
-                        if (checkedItems.length > 0) {
-                          const issuedTo = prompt('Кому выдано?');
-                          if (issuedTo) {
-                            issueItems(tab.id, issuedTo);
+                    {tab.id === '1' && (
+                      <Button
+                        onClick={() => {
+                          const checkedItems = tab.items.filter(item => item.checked);
+                          if (checkedItems.length > 0) {
+                            setIssueDialogOpen(true);
                           }
-                        }
-                      }}
-                      disabled={!tab.items.some(item => item.checked)}
-                    >
-                      Выдать
-                    </Button>
+                        }}
+                        disabled={!tab.items.some(item => item.checked)}
+                      >
+                        Выдать
+                      </Button>
+                    )}
+                    {tab.id === '2' && (
+                      <Button
+                        onClick={() => {
+                          const originalTab = tabs.find(t => t.id === '1');
+                          if (originalTab) {
+                            returnItems(tab.id, originalTab.id);
+                          }
+                        }}
+                        disabled={!tab.items.some(item => item.checked)}
+                      >
+                        Сдать
+                      </Button>
+                    )}
                     <Button variant="outline">Копировать</Button>
                     <Button variant="outline">Сохранить как</Button>
                   </div>
                 )}
               </div>
 
-              {/* Toolbar Panel */}
-              {toolbarOpen[tab.id] && (
+              {/* Toolbar Panel - only for main list and notes */}
+              {(tab.id === '1' || tab.id === '3') && toolbarOpen[tab.id] && (
                 <ToolbarPanel
                   tabId={tab.id}
                   onAddItem={addListItem}
@@ -364,11 +476,13 @@ const ListManager: React.FC = () => {
                   onDeleteSelected={deleteSelected}
                   searchTerm={searchTerm}
                   onSearchChange={setSearchTerm}
+                  selectedItems={tab.items.filter(item => item.checked)}
+                  onUpdateItem={updateItem}
                 />
               )}
 
               {/* Content */}
-              {tab.title === 'Заметки' ? (
+              {tab.id === '3' ? (
                 <Card>
                   <CardContent className="p-4">
                     <textarea
@@ -385,7 +499,7 @@ const ListManager: React.FC = () => {
                     />
                   </CardContent>
                 </Card>
-              ) : tab.title === 'Архив' ? (
+              ) : tab.id === '4' ? (
                 <ArchiveRecord archive={tab.archive || []} />
               ) : (
                 <Card>
@@ -431,7 +545,7 @@ const ListManager: React.FC = () => {
                               <span className="w-8 text-sm text-gray-500">
                                 {tab.items.filter(i => i.type === 'item').indexOf(item) + 1}
                               </span>
-                              <div className="flex-1 grid grid-cols-5 gap-2 resize-x">
+                              <div className="flex-1 grid grid-cols-5 gap-2">
                                 {item.columns.map((col, colIndex) => (
                                   <input
                                     key={colIndex}
@@ -444,6 +558,7 @@ const ListManager: React.FC = () => {
                                     }}
                                     className={`p-1 border rounded text-sm ${item.issued ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                     disabled={item.issued}
+                                    style={getItemStyle(item)}
                                   />
                                 ))}
                               </div>
@@ -462,26 +577,71 @@ const ListManager: React.FC = () => {
                   </CardContent>
                 </Card>
               )}
-
-              {/* Return Button for Issued Items Tab */}
-              {tab.title === 'Выданные' && (
-                <div className="flex justify-end">
-                  <Button
-                    onClick={() => {
-                      const originalTab = tabs.find(t => t.title === 'Основной список');
-                      if (originalTab) {
-                        returnItems(tab.id, originalTab.id);
-                      }
-                    }}
-                    disabled={!tab.items.some(item => item.checked)}
-                  >
-                    Сдать
-                  </Button>
-                </div>
-              )}
             </TabsContent>
           ))}
         </Tabs>
+
+        {/* Rename Tab Dialog */}
+        <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Переименовать вкладку</DialogTitle>
+            </DialogHeader>
+            <Input
+              value={newTabTitle}
+              onChange={(e) => setNewTabTitle(e.target.value)}
+              placeholder="Введите новое название"
+            />
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setRenameDialogOpen(false)}>
+                Отмена
+              </Button>
+              <Button onClick={handleTabRename}>
+                Сохранить
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Clear Archive Dialog */}
+        <Dialog open={clearArchiveDialogOpen} onOpenChange={setClearArchiveDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Очистить архив</DialogTitle>
+            </DialogHeader>
+            <p>Вы уверены, что хотите очистить все данные архива? Это действие нельзя отменить.</p>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setClearArchiveDialogOpen(false)}>
+                Отмена
+              </Button>
+              <Button variant="destructive" onClick={clearArchive}>
+                Очистить
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Issue Items Dialog */}
+        <Dialog open={issueDialogOpen} onOpenChange={setIssueDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Выдать предметы</DialogTitle>
+            </DialogHeader>
+            <Input
+              value={issuedTo}
+              onChange={(e) => setIssuedTo(e.target.value)}
+              placeholder="Кому выдано?"
+            />
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIssueDialogOpen(false)}>
+                Отмена
+              </Button>
+              <Button onClick={handleIssueItems}>
+                Выдать
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
