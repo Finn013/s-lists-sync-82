@@ -255,7 +255,7 @@ const ListManager: React.FC = () => {
         }
         
         return t;
-      };
+      });
       
       return updatedTabs;
     });
