@@ -9,20 +9,36 @@ const Index: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Register service worker for PWA functionality
+    // Регистрация service worker для PWA функциональности
     if ('serviceWorker' in navigator) {
+      console.log('Регистрация Service Worker...');
       navigator.serviceWorker.register('/s-lists-sync/sw.js', {
         scope: '/s-lists-sync/'
       })
         .then((registration) => {
-          console.log('SW registered: ', registration);
+          console.log('Service Worker зарегистрирован успешно:', registration);
+          
+          // Проверяем обновления
+          registration.addEventListener('updatefound', () => {
+            console.log('Найдено обновление Service Worker');
+          });
         })
         .catch((registrationError) => {
-          console.log('SW registration failed: ', registrationError);
+          console.error('Ошибка регистрации Service Worker:', registrationError);
         });
+    } else {
+      console.log('Service Worker не поддерживается в этом браузере');
     }
 
-    // Simulate loading time
+    // Проверяем поддержку PWA
+    console.log('Проверка PWA возможностей:');
+    console.log('- beforeinstallprompt поддерживается:', 'onbeforeinstallprompt' in window);
+    console.log('- Service Worker поддерживается:', 'serviceWorker' in navigator);
+    console.log('- Cache API поддерживается:', 'caches' in window);
+    console.log('- User Agent:', navigator.userAgent);
+    console.log('- Display mode:', window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser');
+
+    // Симуляция времени загрузки
     setTimeout(() => {
       setIsLoading(false);
     }, 2000);
