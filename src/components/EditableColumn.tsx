@@ -1,5 +1,6 @@
 
 import React, { useState, useRef } from 'react';
+import { Toggle } from '@/components/ui/toggle';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
@@ -142,30 +143,30 @@ const EditableColumn: React.FC<EditableColumnProps> = ({
       
       {showFormatButton && isFocused && (
         <div className="absolute top-full left-0 z-10 bg-white border rounded shadow-md p-1 flex gap-1 mt-1">
-          <Button
+          <Toggle
             size="sm"
-            variant={style.bold ? "default" : "outline"}
-            onClick={() => applyFormatting('bold')}
-            className={`text-xs px-2 py-1 h-6 ${style.bold ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`}
+            pressed={style.bold}
+            onPressedChange={() => applyFormatting('bold')}
+            className="text-xs px-2 py-1 h-6"
           >
             <span className="font-bold">Ж</span>
-          </Button>
-          <Button
+          </Toggle>
+          <Toggle
             size="sm"
-            variant={style.italic ? "default" : "outline"}
-            onClick={() => applyFormatting('italic')}
-            className={`text-xs px-2 py-1 h-6 ${style.italic ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`}
+            pressed={style.italic}
+            onPressedChange={() => applyFormatting('italic')}
+            className="text-xs px-2 py-1 h-6"
           >
             <span className="italic">К</span>
-          </Button>
-          <Button
+          </Toggle>
+          <Toggle
             size="sm"
-            variant={style.strikethrough ? "default" : "outline"}
-            onClick={() => applyFormatting('strikethrough')}
-            className={`text-xs px-2 py-1 h-6 ${style.strikethrough ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`}
+            pressed={style.strikethrough}
+            onPressedChange={() => applyFormatting('strikethrough')}
+            className="text-xs px-2 py-1 h-6"
           >
             <span className="line-through">З</span>
-          </Button>
+          </Toggle>
           <Popover open={colorPickerOpen} onOpenChange={setColorPickerOpen}>
             <PopoverTrigger asChild>
               <Button
