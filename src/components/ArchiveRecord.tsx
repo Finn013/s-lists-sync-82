@@ -18,8 +18,30 @@ interface ArchiveRecordProps {
 }
 
 const ArchiveRecord: React.FC<ArchiveRecordProps> = ({ archive }) => {
-  const [sortBy, setSortBy] = useState<'issuedDate' | 'returnedDate'>('issuedDate');
+  const [sortBy, setSortBy] = useState<'issuedDate' | 'returnedDate' | 'rowNumber'>('issuedDate');
   const [searchTerm, setSearchTerm] = useState('');
+
+  const extractRowNumbers = (items: string): number[] => {
+    const matches = items.match(/№\s*(\d+(?:-\d+)?(?:,\s*\d+(?:-\d+)?)*)/);
+    if (!matches) return [];
+    
+    const numbers: number[] = [];
+    const parts = matches[1].split(',');
+    
+    parts.forEach(part => {
+      const trimmed = part.trim();
+      if (trimmed.includes('-')) {
+        const [start, end] = trimmed.split('-').map(n => parseInt(n.trim()));
+        for (let i = start; i <= end; i++) {
+          numbers.push(i);
+        }
+      } else {
+        numbers.push(parseInt(trimmed));
+      }
+    });
+    
+    return numbers.sort((a, b) => a - b);
+  };
 
   const filteredAndSortedArchive = archive
     .filter(entry => 
@@ -27,6 +49,14 @@ const ArchiveRecord: React.FC<ArchiveRecordProps> = ({ archive }) => {
       entry.issuedTo.toLowerCase().includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => {
+      if (sortBy === 'rowNumber') {
+        const aNumbers = extractRowNumbers(a.items);
+        const bNumbers = extractRowNumbers(b.items);
+        const aMin = aNumbers.length > 0 ? Math.min(...aNumbers) : 0;
+        const bMin = bNumbers.length > 0 ? Math.min(...bNumbers) : 0;
+        return aMin - bMin;
+      }
+      
       const dateA = new Date(a[sortBy] || '');
       const dateB = new Date(b[sortBy] || '');
       return dateB.getTime() - dateA.getTime(); // Newest first
@@ -54,6 +84,12 @@ const ArchiveRecord: React.FC<ArchiveRecordProps> = ({ archive }) => {
             onClick={() => setSortBy('returnedDate')}
           >
             По дате возврата
+          </Button>
+          <Button 
+            variant={sortBy === 'rowNumber' ? 'default' : 'outline'}
+            onClick={() => setSortBy('rowNumber')}
+          >
+            По номеру строки
           </Button>
         </div>
       </CardHeader>

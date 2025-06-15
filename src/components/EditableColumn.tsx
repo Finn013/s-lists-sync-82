@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
@@ -30,6 +30,8 @@ const EditableColumn: React.FC<EditableColumnProps> = ({
 }) => {
   const [isFormatOpen, setIsFormatOpen] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
+  const [cursorPosition, setCursorPosition] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const colors = [
     '#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', 
@@ -74,12 +76,23 @@ const EditableColumn: React.FC<EditableColumnProps> = ({
     }
   };
 
+  const handleInputClick = (e: React.MouseEvent<HTMLInputElement>) => {
+    setCursorPosition(e.currentTarget.selectionStart || 0);
+  };
+
+  const handleKeyUp = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    setCursorPosition(e.currentTarget.selectionStart || 0);
+  };
+
   return (
     <div className="relative flex items-center">
       <input
+        ref={inputRef}
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value, style)}
+        onClick={handleInputClick}
+        onKeyUp={handleKeyUp}
         className={`p-1 border rounded text-sm ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
         disabled={disabled}
         style={getInputStyle()}
@@ -96,11 +109,15 @@ const EditableColumn: React.FC<EditableColumnProps> = ({
         <Popover open={isFormatOpen} onOpenChange={setIsFormatOpen}>
           <PopoverTrigger asChild>
             <Button variant="ghost" size="sm" className="ml-1 h-6 w-6 p-0">
-              🎨
+              ✏️
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-2">
             <div className="space-y-2">
+              <div className="text-xs text-gray-500 mb-2">
+                Форматирование для позиции курсора: {cursorPosition}
+              </div>
+              
               <div className="flex gap-1">
                 <Button
                   size="sm"
