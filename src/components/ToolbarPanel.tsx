@@ -118,38 +118,163 @@ const ToolbarPanel: React.FC<ToolbarPanelProps> = ({
 
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
+    const fullText = textarea.value;
     
     if (start === end) return;
     
     const selectedText = textarea.value.substring(start, end);
-    let formattedText = selectedText;
+    let newText = fullText;
+    let newStart = start;
+    let newEnd = end;
     
+    // Проверяем, не находится ли выделенный текст уже в форматировании
     switch (format) {
       case 'bold':
-        formattedText = `**${selectedText}**`;
+        if (selectedText.startsWith('**') && selectedText.endsWith('**') && selectedText.length > 4) {
+          // Убираем форматирование
+          const unformattedText = selectedText.slice(2, -2);
+          newText = fullText.substring(0, start) + unformattedText + fullText.substring(end);
+          newStart = start;
+          newEnd = start + unformattedText.length;
+        } else {
+          // Проверяем, окружен ли текст форматированием
+          const beforeText = fullText.substring(Math.max(0, start - 2), start);
+          const afterText = fullText.substring(end, Math.min(fullText.length, end + 2));
+          
+          if (beforeText === '**' && afterText === '**') {
+            // Убираем окружающее форматирование
+            newText = fullText.substring(0, start - 2) + selectedText + fullText.substring(end + 2);
+            newStart = start - 2;
+            newEnd = end - 2;
+          } else {
+            // Добавляем форматирование
+            const formattedText = `**${selectedText}**`;
+            newText = fullText.substring(0, start) + formattedText + fullText.substring(end);
+            newStart = start + 2;
+            newEnd = end + 2;
+          }
+        }
         break;
+        
       case 'italic':
-        formattedText = `*${selectedText}*`;
+        if (selectedText.startsWith('*') && selectedText.endsWith('*') && selectedText.length > 2 && !selectedText.startsWith('**')) {
+          // Убираем форматирование
+          const unformattedText = selectedText.slice(1, -1);
+          newText = fullText.substring(0, start) + unformattedText + fullText.substring(end);
+          newStart = start;
+          newEnd = start + unformattedText.length;
+        } else {
+          // Проверяем, окружен ли текст форматированием
+          const beforeText = fullText.substring(Math.max(0, start - 1), start);
+          const afterText = fullText.substring(end, Math.min(fullText.length, end + 1));
+          
+          if (beforeText === '*' && afterText === '*' && 
+              fullText.substring(Math.max(0, start - 2), start) !== '**' &&
+              fullText.substring(end, Math.min(fullText.length, end + 2)) !== '**') {
+            // Убираем окружающее форматирование
+            newText = fullText.substring(0, start - 1) + selectedText + fullText.substring(end + 1);
+            newStart = start - 1;
+            newEnd = end - 1;
+          } else {
+            // Добавляем форматирование
+            const formattedText = `*${selectedText}*`;
+            newText = fullText.substring(0, start) + formattedText + fullText.substring(end);
+            newStart = start + 1;
+            newEnd = end + 1;
+          }
+        }
         break;
+        
       case 'strikethrough':
-        formattedText = `~~${selectedText}~~`;
+        if (selectedText.startsWith('~~') && selectedText.endsWith('~~') && selectedText.length > 4) {
+          // Убираем форматирование
+          const unformattedText = selectedText.slice(2, -2);
+          newText = fullText.substring(0, start) + unformattedText + fullText.substring(end);
+          newStart = start;
+          newEnd = start + unformattedText.length;
+        } else {
+          // Проверяем, окружен ли текст форматированием
+          const beforeText = fullText.substring(Math.max(0, start - 2), start);
+          const afterText = fullText.substring(end, Math.min(fullText.length, end + 2));
+          
+          if (beforeText === '~~' && afterText === '~~') {
+            // Убираем окружающее форматирование
+            newText = fullText.substring(0, start - 2) + selectedText + fullText.substring(end + 2);
+            newStart = start - 2;
+            newEnd = end - 2;
+          } else {
+            // Добавляем форматирование
+            const formattedText = `~~${selectedText}~~`;
+            newText = fullText.substring(0, start) + formattedText + fullText.substring(end);
+            newStart = start + 2;
+            newEnd = end + 2;
+          }
+        }
         break;
+        
       case 'fontSize':
         if (value === 'increase') {
-          formattedText = `## ${selectedText}`;
+          if (selectedText.startsWith('### ')) {
+            // Убираем ### и делаем ##
+            const newFormattedText = `## ${selectedText.slice(4)}`;
+            newText = fullText.substring(0, start) + newFormattedText + fullText.substring(end);
+            newStart = start + 3;
+            newEnd = start + newFormattedText.length - 3;
+          } else if (selectedText.startsWith('## ')) {
+            // Убираем ## и делаем #
+            const newFormattedText = `# ${selectedText.slice(3)}`;
+            newText = fullText.substring(0, start) + newFormattedText + fullText.substring(end);
+            newStart = start + 2;
+            newEnd = start + newFormattedText.length - 2;
+          } else if (selectedText.startsWith('# ')) {
+            // Убираем форматирование
+            const unformattedText = selectedText.slice(2);
+            newText = fullText.substring(0, start) + unformattedText + fullText.substring(end);
+            newStart = start;
+            newEnd = start + unformattedText.length;
+          } else {
+            // Добавляем ###
+            const formattedText = `### ${selectedText}`;
+            newText = fullText.substring(0, start) + formattedText + fullText.substring(end);
+            newStart = start + 4;
+            newEnd = end + 4;
+          }
         } else {
-          formattedText = `### ${selectedText}`;
+          if (selectedText.startsWith('# ')) {
+            // Убираем # и делаем ##
+            const newFormattedText = `## ${selectedText.slice(2)}`;
+            newText = fullText.substring(0, start) + newFormattedText + fullText.substring(end);
+            newStart = start + 3;
+            newEnd = start + newFormattedText.length - 3;
+          } else if (selectedText.startsWith('## ')) {
+            // Убираем ## и делаем ###
+            const newFormattedText = `### ${selectedText.slice(3)}`;
+            newText = fullText.substring(0, start) + newFormattedText + fullText.substring(end);
+            newStart = start + 4;
+            newEnd = start + newFormattedText.length - 4;
+          } else if (selectedText.startsWith('### ')) {
+            // Убираем форматирование
+            const unformattedText = selectedText.slice(4);
+            newText = fullText.substring(0, start) + unformattedText + fullText.substring(end);
+            newStart = start;
+            newEnd = start + unformattedText.length;
+          } else {
+            // Добавляем #
+            const formattedText = `# ${selectedText}`;
+            newText = fullText.substring(0, start) + formattedText + fullText.substring(end);
+            newStart = start + 2;
+            newEnd = end + 2;
+          }
         }
         break;
     }
     
-    const newValue = textarea.value.substring(0, start) + formattedText + textarea.value.substring(end);
-    textarea.value = newValue;
+    // Обновляем текст
+    textarea.value = newText;
     textarea.dispatchEvent(new Event('input', { bubbles: true }));
     
-    // Set cursor position after the formatted text
-    const newPosition = start + formattedText.length;
-    textarea.setSelectionRange(newPosition, newPosition);
+    // Восстанавливаем выделение
+    textarea.setSelectionRange(newStart, newEnd);
     textarea.focus();
   };
 
