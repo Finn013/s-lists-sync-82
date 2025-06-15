@@ -712,6 +712,7 @@ const ListManager: React.FC = () => {
                                     onWidthChange={(width) => updateGlobalColumnWidth(tab.id, colIndex, width)}
                                     columnIndex={colIndex}
                                     onFocus={() => handleColumnFocus(item.id, colIndex)}
+                                    showFormatButton={toolbarOpen[tab.id] || false}
                                   />
                                 ))}
                               </div>
