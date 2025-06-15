@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Upload } from 'lucide-react';
+import { Download, Upload, FileText } from 'lucide-react';
 import { CryptoManager } from '../utils/cryptoManager';
 import { DataManager } from '../utils/dataManager';
 
@@ -119,26 +118,91 @@ const ExportImportPanel: React.FC<ExportImportPanelProps> = ({ tabs, onImport })
     }
   };
 
+  const handleExportTxt = () => {
+    try {
+      let content = '';
+      
+      tabs.forEach(tab => {
+        content += `=== ${tab.title} ===\n\n`;
+        
+        if (tab.id === '3') {
+          content += tab.notes || '';
+        } else if (tab.id === '4' && tab.archive) {
+          tab.archive.forEach(entry => {
+            content += `${entry.items} - Выдано: ${entry.issuedTo} (${entry.issuedDate})`;
+            if (entry.returnedDate) {
+              content += ` - Возвращено: ${entry.returnedDate}`;
+            }
+            content += '\n';
+          });
+        } else {
+          tab.items.forEach(item => {
+            if (item.type === 'separator') {
+              content += `\n--- ${item.separatorText} ---\n`;
+            } else {
+              const rowNum = tab.items.filter(i => i.type === 'item').indexOf(item) + 1;
+              const columnsText = item.columns.join(' | ');
+              content += `${rowNum}. ${columnsText}\n`;
+            }
+          });
+        }
+        
+        content += '\n\n';
+      });
+
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `все-данные-${new Date().toISOString().slice(0, 10)}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Экспорт TXT завершен",
+        description: "Все данные сохранены в текстовый файл"
+      });
+    } catch (error) {
+      console.error('TXT Export error:', error);
+      toast({
+        title: "Ошибка экспорта TXT",
+        description: "Не удалось сохранить текстовый файл",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <>
-      <div className="flex gap-2">
+      <div className="flex gap-1 flex-wrap">
         <Button
           size="sm"
           variant="outline"
           onClick={() => setExportDialogOpen(true)}
-          className="bg-green-50 border-green-200 hover:bg-green-100"
+          className="bg-green-50 border-green-200 hover:bg-green-100 text-xs px-2"
         >
-          <Download size={16} className="mr-1" />
-          Экспорт
+          <Download size={14} className="mr-1" />
+          <span className="hidden sm:inline">Экспорт</span>
         </Button>
         <Button
           size="sm"
           variant="outline"
           onClick={() => setImportDialogOpen(true)}
-          className="bg-blue-50 border-blue-200 hover:bg-blue-100"
+          className="bg-blue-50 border-blue-200 hover:bg-blue-100 text-xs px-2"
         >
-          <Upload size={16} className="mr-1" />
-          Импорт
+          <Upload size={14} className="mr-1" />
+          <span className="hidden sm:inline">Импорт</span>
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleExportTxt}
+          className="bg-orange-50 border-orange-200 hover:bg-orange-100 text-xs px-2"
+        >
+          <FileText size={14} className="mr-1" />
+          <span className="hidden sm:inline">TXT</span>
         </Button>
       </div>
 

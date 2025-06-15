@@ -501,9 +501,9 @@ const ListManager: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto p-4">
+      <div className="container mx-auto p-2 sm:p-4">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 mb-4">
+          <TabsList className="grid w-full grid-cols-4 mb-2 sm:mb-4">
             {tabs.map(tab => (
               <ContextMenu key={tab.id}>
                 <ContextMenuTrigger asChild>
@@ -519,6 +519,7 @@ const ListManager: React.FC = () => {
                       const timer = e.currentTarget.dataset.timer;
                       if (timer) clearTimeout(parseInt(timer));
                     }}
+                    className="text-xs sm:text-sm"
                   >
                     {tab.title}
                   </TabsTrigger>
@@ -533,7 +534,7 @@ const ListManager: React.FC = () => {
           </TabsList>
 
           {tabs.map(tab => (
-            <TabsContent key={tab.id} value={tab.id} className="space-y-4">
+            <TabsContent key={tab.id} value={tab.id} className="space-y-2 sm:space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2">
                   {(tab.id === '1' || tab.id === '3') && (
@@ -541,30 +542,34 @@ const ListManager: React.FC = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => setToolbarOpen(prev => ({ ...prev, [tab.id]: !prev[tab.id] }))}
+                      className="text-xs px-2 sm:px-3"
                     >
-                      ✓ {toolbarOpen[tab.id] ? 'Скрыть панель' : 'Показать панель'}
+                      <div className="flex flex-col gap-0.5 w-3 h-3">
+                        <div className="w-full h-0.5 bg-current"></div>
+                        <div className="w-full h-0.5 bg-current"></div>
+                        <div className="w-full h-0.5 bg-current"></div>
+                      </div>
+                      <span className="ml-2 hidden sm:inline">Панель</span>
                     </Button>
                   )}
-                  
-                  <ExportImportPanel 
-                    tabs={tabs} 
-                    onImport={handleImportTabs}
-                  />
                 </div>
                 
                 {tab.id === '4' && (
                   <Button
                     variant="destructive"
+                    size="sm"
                     onClick={() => setClearArchiveDialogOpen(true)}
+                    className="text-xs px-2 sm:px-3"
                   >
                     Очистить архив
                   </Button>
                 )}
                 
                 {(tab.id === '1' || tab.id === '2') && (
-                  <div className="flex space-x-2">
+                  <div className="flex flex-wrap gap-1 sm:gap-2">
                     {tab.id === '1' && (
                       <Button
+                        size="sm"
                         onClick={() => {
                           const checkedItems = tab.items.filter(item => item.checked);
                           if (checkedItems.length > 0) {
@@ -572,12 +577,14 @@ const ListManager: React.FC = () => {
                           }
                         }}
                         disabled={!tab.items.some(item => item.checked)}
+                        className="text-xs px-2 sm:px-3"
                       >
                         Выдать
                       </Button>
                     )}
                     {tab.id === '2' && (
                       <Button
+                        size="sm"
                         onClick={() => {
                           const originalTab = tabs.find(t => t.id === '1');
                           if (originalTab) {
@@ -585,6 +592,7 @@ const ListManager: React.FC = () => {
                           }
                         }}
                         disabled={!tab.items.some(item => item.checked)}
+                        className="text-xs px-2 sm:px-3"
                       >
                         Сдать
                       </Button>
@@ -610,20 +618,26 @@ const ListManager: React.FC = () => {
                   items={tab.items}
                   focusedColumnIndex={focusedColumnIndex}
                   onUpdateColumnStyle={updateColumnStyle}
+                  tabs={tabs}
+                  onImportTabs={handleImportTabs}
                 />
               )}
 
               {tab.id === '3' ? (
                 <Card>
-                  <CardContent className="p-4">
+                  <CardContent className="p-2 sm:p-4">
                     <textarea
-                      className="w-full h-96 p-4 border rounded-lg resize-none"
+                      className="w-full h-64 sm:h-96 p-2 sm:p-4 border rounded-lg resize-none text-sm sm:text-base"
                       placeholder="Введите ваши заметки здесь..."
                       value={tab.notes || ''}
                       onChange={(e) => {
                         setTabs(prev => prev.map(t =>
                           t.id === tab.id ? { ...t, notes: e.target.value } : t
                         ));
+                      }}
+                      style={{
+                        fontFamily: 'inherit',
+                        lineHeight: '1.5'
                       }}
                     />
                   </CardContent>
@@ -632,8 +646,8 @@ const ListManager: React.FC = () => {
                 <ArchiveRecord archive={tab.archive || []} />
               ) : (
                 <Card>
-                  <CardContent className="p-4">
-                    <div className="space-y-2">
+                  <CardContent className="p-2 sm:p-4">
+                    <div className="space-y-1 sm:space-y-2">
                       {renderVisibleItems(filteredItems(tab.items)).map((item, index) => (
                         <div
                           key={item.id}
@@ -645,7 +659,7 @@ const ListManager: React.FC = () => {
                         >
                           {item.type === 'separator' ? (
                             <div 
-                              className="flex items-center space-x-2 py-2 px-3 rounded-lg border-l-4"
+                              className="flex items-center space-x-1 sm:space-x-2 py-1 sm:py-2 px-2 sm:px-3 rounded-lg border-l-4"
                               style={{ 
                                 backgroundColor: item.separatorColor || '#e5e7eb',
                                 borderLeftColor: item.separatorColor || '#6b7280'
@@ -657,10 +671,10 @@ const ListManager: React.FC = () => {
                                 onClick={() => toggleSeparatorCollapse(tab.id, item.id)}
                                 className="p-0 h-auto"
                               >
-                                {item.collapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+                                {item.collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
                               </Button>
                               <div 
-                                className="flex-1 font-medium"
+                                className="flex-1 font-medium text-sm sm:text-base"
                                 style={{ textAlign: item.separatorAlign || 'left' }}
                               >
                                 {item.separatorText}
@@ -673,20 +687,20 @@ const ListManager: React.FC = () => {
                               />
                             </div>
                           ) : (
-                            <div className={`flex items-center space-x-2 p-2 rounded-lg border ${item.issued ? 'bg-gray-200 text-gray-500' : 'bg-white'}`}>
+                            <div className={`flex items-center space-x-1 sm:space-x-2 p-1 sm:p-2 rounded-lg border ${item.issued ? 'bg-gray-200 text-gray-500' : 'bg-white'}`}>
                               <Checkbox
                                 checked={item.checked}
                                 onCheckedChange={(checked) => 
                                   updateItem(tab.id, item.id, { checked: Boolean(checked) })
                                 }
                               />
-                              <span className="w-8 text-sm text-gray-500">
+                              <span className="w-6 sm:w-8 text-xs sm:text-sm text-gray-500">
                                 {tab.id === '2' && item.originalRowNumber ? 
                                   item.originalRowNumber : 
                                   tab.items.filter(i => i.type === 'item').indexOf(item) + 1
                                 }
                               </span>
-                              <div className="flex-1 flex gap-2">
+                              <div className="flex-1 flex gap-1 sm:gap-2">
                                 {item.columns.map((col, colIndex) => (
                                   <EditableColumn
                                     key={colIndex}

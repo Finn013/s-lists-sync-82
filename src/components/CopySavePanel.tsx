@@ -45,6 +45,22 @@ interface CopySavePanelProps {
 const CopySavePanel: React.FC<CopySavePanelProps> = ({ currentTab, selectedItems }) => {
   const { toast } = useToast();
 
+  const getItemsWithSeparators = () => {
+    const result: { item?: ListItem; separator?: ListItem }[] = [];
+    let currentSeparator: ListItem | undefined;
+
+    // Find separator for each selected item
+    for (const item of currentTab.items) {
+      if (item.type === 'separator') {
+        currentSeparator = item;
+      } else if (item.checked && item.type === 'item') {
+        result.push({ item, separator: currentSeparator });
+      }
+    }
+
+    return result;
+  };
+
   const handleCopy = async () => {
     if (selectedItems.length === 0) {
       toast({
@@ -56,16 +72,24 @@ const CopySavePanel: React.FC<CopySavePanelProps> = ({ currentTab, selectedItems
     }
 
     try {
-      const textToCopy = selectedItems
-        .filter(item => item.type === 'item')
-        .map(item => {
+      const itemsWithSeparators = getItemsWithSeparators();
+      let textToCopy = '';
+      let lastSeparator: string | undefined;
+
+      itemsWithSeparators.forEach(({ item, separator }) => {
+        if (separator && separator.separatorText !== lastSeparator) {
+          textToCopy += `\n--- ${separator.separatorText} ---\n`;
+          lastSeparator = separator.separatorText;
+        }
+        
+        if (item) {
           const rowNum = currentTab.items.filter(i => i.type === 'item').indexOf(item) + 1;
           const columnsText = item.columns.join(' | ');
-          return `${rowNum}. ${columnsText}`;
-        })
-        .join('\n');
+          textToCopy += `${rowNum}. ${columnsText}\n`;
+        }
+      });
 
-      await navigator.clipboard.writeText(textToCopy);
+      await navigator.clipboard.writeText(textToCopy.trim());
       
       toast({
         title: "Скопировано",
@@ -82,32 +106,38 @@ const CopySavePanel: React.FC<CopySavePanelProps> = ({ currentTab, selectedItems
   };
 
   const handleSaveAs = () => {
-    try {
-      let content = '';
-      
-      if (currentTab.id === '3') {
-        // For notes tab, export notes content
-        content = currentTab.notes || '';
-      } else {
-        // For other tabs, export items as text
-        content = currentTab.items
-          .map(item => {
-            if (item.type === 'separator') {
-              return `\n--- ${item.separatorText} ---\n`;
-            } else {
-              const rowNum = currentTab.items.filter(i => i.type === 'item').indexOf(item) + 1;
-              const columnsText = item.columns.join(' | ');
-              return `${rowNum}. ${columnsText}`;
-            }
-          })
-          .join('\n');
-      }
+    if (selectedItems.length === 0) {
+      toast({
+        title: "Нет выбранных элементов",
+        description: "Выберите элементы для сохранения",
+        variant: "destructive"
+      });
+      return;
+    }
 
-      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    try {
+      const itemsWithSeparators = getItemsWithSeparators();
+      let content = '';
+      let lastSeparator: string | undefined;
+
+      itemsWithSeparators.forEach(({ item, separator }) => {
+        if (separator && separator.separatorText !== lastSeparator) {
+          content += `\n--- ${separator.separatorText} ---\n`;
+          lastSeparator = separator.separatorText;
+        }
+        
+        if (item) {
+          const rowNum = currentTab.items.filter(i => i.type === 'item').indexOf(item) + 1;
+          const columnsText = item.columns.join(' | ');
+          content += `${rowNum}. ${columnsText}\n`;
+        }
+      });
+
+      const blob = new Blob([content.trim()], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${currentTab.title}-${new Date().toISOString().slice(0, 10)}.txt`;
+      a.download = `${currentTab.title}-выбранные-${new Date().toISOString().slice(0, 10)}.txt`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -115,7 +145,7 @@ const CopySavePanel: React.FC<CopySavePanelProps> = ({ currentTab, selectedItems
 
       toast({
         title: "Сохранено",
-        description: `Вкладка "${currentTab.title}" сохранена как текстовый файл`
+        description: `${selectedItems.length} выбранных элементов сохранено`
       });
     } catch (error) {
       console.error('Save error:', error);
@@ -134,16 +164,19 @@ const CopySavePanel: React.FC<CopySavePanelProps> = ({ currentTab, selectedItems
         size="sm"
         onClick={handleCopy}
         disabled={selectedItems.length === 0}
+        className="text-xs px-2"
       >
-        <Copy size={16} className="mr-1" />
+        <Copy size={14} className="mr-1" />
         Копировать
       </Button>
       <Button 
         variant="outline" 
         size="sm"
         onClick={handleSaveAs}
+        disabled={selectedItems.length === 0}
+        className="text-xs px-2"
       >
-        <Save size={16} className="mr-1" />
+        <Save size={14} className="mr-1" />
         Сохранить как
       </Button>
     </div>
