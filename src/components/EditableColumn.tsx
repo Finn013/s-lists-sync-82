@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import FormattingToolbar from './FormattingToolbar';
 import ResizeHandle from './ResizeHandle';
@@ -18,9 +17,9 @@ interface EditableColumnProps {
   disabled?: boolean;
   width?: number;
   onWidthChange?: (width: number) => void;
-  showFormatButton?: boolean;
   onFocus?: () => void;
   columnIndex?: number;
+  editingMode?: boolean;
 }
 
 const EditableColumn: React.FC<EditableColumnProps> = ({
@@ -30,9 +29,9 @@ const EditableColumn: React.FC<EditableColumnProps> = ({
   disabled = false,
   width = 200,
   onWidthChange,
-  showFormatButton = false,
   onFocus,
-  columnIndex
+  columnIndex,
+  editingMode = false
 }) => {
   const [isResizing, setIsResizing] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -40,7 +39,7 @@ const EditableColumn: React.FC<EditableColumnProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
 
   console.log('EditableColumn render - style:', style);
-  console.log('EditableColumn render - showFormatButton:', showFormatButton);
+  console.log('EditableColumn render - editingMode:', editingMode);
   console.log('EditableColumn render - isFocused:', isFocused);
 
   const getInputStyle = (): React.CSSProperties => {
@@ -146,7 +145,7 @@ const EditableColumn: React.FC<EditableColumnProps> = ({
         data-column-index={columnIndex}
       />
       
-      {isFocused && (
+      {editingMode && isFocused && (
         <div className="formatting-toolbar">
           <FormattingToolbar
             style={style}
