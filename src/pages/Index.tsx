@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import PasswordManager from '../components/PasswordManager';
 import ListManager from '../components/ListManager';
+import PWAInstaller from '../components/PWAInstaller';
 
 const Index: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -10,7 +11,9 @@ const Index: React.FC = () => {
   useEffect(() => {
     // Register service worker for PWA functionality
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
+      navigator.serviceWorker.register('/s-lists-sync/sw.js', {
+        scope: '/s-lists-sync/'
+      })
         .then((registration) => {
           console.log('SW registered: ', registration);
         })
@@ -45,11 +48,16 @@ const Index: React.FC = () => {
     );
   }
 
-  if (!isAuthenticated) {
-    return <PasswordManager onAuthenticated={handleAuthenticated} />;
-  }
-
-  return <ListManager />;
+  return (
+    <>
+      {!isAuthenticated ? (
+        <PasswordManager onAuthenticated={handleAuthenticated} />
+      ) : (
+        <ListManager />
+      )}
+      <PWAInstaller />
+    </>
+  );
 };
 
 export default Index;
