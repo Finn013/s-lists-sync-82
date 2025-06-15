@@ -206,14 +206,20 @@ const ListManager: React.FC = () => {
     const checkedItems = tab.items.filter(item => item.checked && item.type === 'item');
     const currentDate = new Date().toLocaleDateString('ru-RU');
 
+    // Get row numbers for checked items
+    const itemsWithRowNumbers = checkedItems.map(checkedItem => {
+      const itemIndex = tab.items.filter(i => i.type === 'item').indexOf(checkedItem);
+      return {
+        ...checkedItem,
+        originalRowNumber: itemIndex + 1
+      };
+    });
+
     // Create archive entry
-    const itemNumbers = checkedItems.map((_, index) => 
-      tab.items.filter(i => i.type === 'item').indexOf(checkedItems[index]) + 1
-    );
-    
+    const rowNumbers = itemsWithRowNumbers.map(item => item.originalRowNumber);
     const archiveEntry: ArchiveEntry = {
       id: Date.now().toString(),
-      items: `№ ${itemNumbers.join(', ')}`,
+      items: `№ ${rowNumbers.join(', ')}`,
       issuedTo,
       issuedDate: currentDate
     };
@@ -228,14 +234,14 @@ const ListManager: React.FC = () => {
       )
     };
 
-    // Add items to "Выданные" tab
+    // Add items to "Выданные" tab with preserved row numbers
     const issuedTab = tabs.find(t => t.title === 'Выданные');
     const archiveTab = tabs.find(t => t.title === 'Архив');
     
     let updatedTabs = tabs.map(t => t.id === tabId ? updatedCurrentTab : t);
 
     if (issuedTab) {
-      const issuedItems = checkedItems.map(item => ({
+      const issuedItems = itemsWithRowNumbers.map(item => ({
         ...item,
         id: Date.now().toString() + Math.random(),
         issued: true,
@@ -284,19 +290,28 @@ const ListManager: React.FC = () => {
           return { ...t, items: t.items.filter(item => !item.checked) };
         }
         if (t.id === toTabId) {
-          const returnedItems = checkedItems.map(item => ({
-            ...item,
-            issued: false,
-            returnedDate: currentDate,
-            checked: false
-          }));
+          // Find matching items by originalRowNumber and update only those
+          const returnedItems = checkedItems.filter(item => item.originalRowNumber);
+          
           return {
             ...t,
             items: t.items.map(originalItem => {
-              const returnedItem = returnedItems.find(ri => 
-                ri.text === originalItem.text && originalItem.issued
-              );
-              return returnedItem ? { ...originalItem, ...returnedItem } : originalItem;
+              const itemIndex = t.items.filter(i => i.type === 'item').indexOf(originalItem);
+              const currentRowNumber = itemIndex + 1;
+              
+              const returnedItem = returnedItems.find(ri => ri.originalRowNumber === currentRowNumber);
+              
+              if (returnedItem) {
+                return {
+                  ...originalItem,
+                  issued: false,
+                  returnedDate: currentDate,
+                  checked: false,
+                  issuedTo: undefined,
+                  issuedDate: undefined
+                };
+              }
+              return originalItem;
             })
           };
         }
@@ -624,7 +639,10 @@ const ListManager: React.FC = () => {
                                 }
                               />
                               <span className="w-8 text-sm text-gray-500">
-                                {tab.items.filter(i => i.type === 'item').indexOf(item) + 1}
+                                {tab.id === '2' && item.originalRowNumber ? 
+                                  item.originalRowNumber : 
+                                  tab.items.filter(i => i.type === 'item').indexOf(item) + 1
+                                }
                               </span>
                               <div className="flex-1 flex gap-2">
                                 {item.columns.map((col, colIndex) => (
@@ -636,6 +654,7 @@ const ListManager: React.FC = () => {
                                     disabled={item.issued}
                                     width={item.columnWidths?.[colIndex] || 200}
                                     onWidthChange={(width) => updateColumnWidth(tab.id, item.id, colIndex, width)}
+                                    showFormatButton={false}
                                   />
                                 ))}
                               </div>
