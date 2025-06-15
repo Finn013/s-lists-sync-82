@@ -1,8 +1,7 @@
 
 import React, { useState, useRef } from 'react';
-import { Toggle } from '@/components/ui/toggle';
-import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import FormattingToolbar from './FormattingToolbar';
+import ResizeHandle from './ResizeHandle';
 
 interface ColumnStyle {
   bold?: boolean;
@@ -127,11 +126,6 @@ const EditableColumn: React.FC<EditableColumnProps> = ({
     }, 0);
   };
 
-  const colors = [
-    '#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', 
-    '#FF00FF', '#00FFFF', '#800000', '#008000', '#000080'
-  ];
-
   return (
     <div className="relative flex items-center">
       <input
@@ -148,74 +142,16 @@ const EditableColumn: React.FC<EditableColumnProps> = ({
       />
       
       {showFormatButton && isFocused && (
-        <div className="absolute top-full left-0 z-10 bg-white border rounded shadow-md p-1 flex gap-1 mt-1">
-          <Toggle
-            size="sm"
-            pressed={!!style.bold}
-            onPressedChange={() => {
-              console.log('Bold button clicked, current bold state:', style.bold);
-              applyFormatting('bold');
-            }}
-            className="text-xs px-2 py-1 h-6 data-[state=on]:bg-blue-600 data-[state=on]:text-white"
-          >
-            <span className="font-bold">Ж</span>
-          </Toggle>
-          <Toggle
-            size="sm"
-            pressed={!!style.italic}
-            onPressedChange={() => {
-              console.log('Italic button clicked, current italic state:', style.italic);
-              applyFormatting('italic');
-            }}
-            className="text-xs px-2 py-1 h-6 data-[state=on]:bg-blue-600 data-[state=on]:text-white"
-          >
-            <span className="italic">К</span>
-          </Toggle>
-          <Toggle
-            size="sm"
-            pressed={!!style.strikethrough}
-            onPressedChange={() => {
-              console.log('Strikethrough button clicked, current strikethrough state:', style.strikethrough);
-              applyFormatting('strikethrough');
-            }}
-            className="text-xs px-2 py-1 h-6 data-[state=on]:bg-blue-600 data-[state=on]:text-white"
-          >
-            <span className="line-through">З</span>
-          </Toggle>
-          <Popover open={colorPickerOpen} onOpenChange={setColorPickerOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                size="sm"
-                variant="outline"
-                className="text-xs px-2 py-1 h-6"
-              >
-                🎨
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-2">
-              <div className="grid grid-cols-5 gap-1">
-                {colors.map(color => (
-                  <button
-                    key={color}
-                    className="w-6 h-6 rounded border-2 border-gray-300 hover:border-gray-500"
-                    style={{ backgroundColor: color }}
-                    onClick={() => {
-                      applyFormatting('textColor', color);
-                      setColorPickerOpen(false);
-                    }}
-                  />
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
-        </div>
+        <FormattingToolbar
+          style={style}
+          onFormatChange={applyFormatting}
+          colorPickerOpen={colorPickerOpen}
+          onColorPickerOpenChange={setColorPickerOpen}
+        />
       )}
       
       {onWidthChange && (
-        <div
-          className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 opacity-50"
-          onMouseDown={handleMouseDown}
-        />
+        <ResizeHandle onResize={handleMouseDown} />
       )}
     </div>
   );
