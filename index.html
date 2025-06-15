@@ -3,7 +3,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>S- - Список приложение</title>
     <meta name="description" content="Приложение для создания и управления списками">
     <meta name="theme-color" content="#2563eb">
@@ -28,6 +28,36 @@
     <!-- Additional PWA meta tags -->
     <meta name="msapplication-TileColor" content="#2563eb">
     <meta name="msapplication-config" content="none">
+    
+    <!-- Prevent text size adjustment on iOS -->
+    <style>
+      body {
+        -webkit-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
+      }
+      
+      /* Prevent zoom on input focus on iOS */
+      input[type="text"],
+      input[type="password"],
+      input[type="email"],
+      input[type="number"],
+      textarea,
+      select {
+        font-size: 16px !important;
+      }
+      
+      @media screen and (max-width: 768px) {
+        input[type="text"],
+        input[type="password"],
+        input[type="email"],
+        input[type="number"],
+        textarea,
+        select {
+          font-size: 16px !important;
+          transform: scale(1);
+        }
+      }
+    </style>
 </head>
 <body>
     <div id="root" class="min-h-screen bg-gray-50">
@@ -41,9 +71,9 @@
 
         <!-- Password Screen -->
         <div id="password-screen" class="fixed inset-0 bg-gray-900 bg-opacity-75 items-center justify-center z-40 hidden">
-            <div class="bg-white p-8 rounded-lg max-w-md w-full mx-4">
-                <h2 class="text-2xl font-bold mb-4 text-center">Введите пароль</h2>
-                <input type="password" id="password-input" class="w-full p-3 border rounded-lg mb-4" placeholder="Пароль">
+            <div class="bg-white p-4 sm:p-8 rounded-lg max-w-sm w-full mx-2 sm:mx-4">
+                <h2 class="text-xl sm:text-2xl font-bold mb-4 text-center">Введите пароль</h2>
+                <input type="password" id="password-input" class="w-full p-3 border rounded-lg mb-4 text-base" placeholder="Пароль">
                 <button id="password-submit" class="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700">Войти</button>
                 <div id="password-error" class="text-red-600 text-sm mt-2 hidden">Неверный пароль</div>
             </div>
@@ -53,10 +83,10 @@
         <div id="main-app" class="hidden">
             <!-- Header with Tabs -->
             <header class="bg-white shadow-sm border-b">
-                <div class="flex items-center justify-between p-4">
-                    <h1 class="text-2xl font-bold text-blue-600">S-</h1>
+                <div class="flex items-center justify-between p-3 sm:p-4">
+                    <h1 class="text-xl sm:text-2xl font-bold text-blue-600">S-</h1>
                     <button id="settings-btn" class="p-2 text-gray-600 hover:text-gray-800">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                         </svg>
@@ -68,36 +98,36 @@
                     <div id="tabs-container" class="flex min-w-full">
                         <!-- Tabs will be dynamically generated -->
                     </div>
-                    <button id="add-tab-btn" class="flex-shrink-0 p-3 text-gray-500 hover:text-gray-700 border-l">+</button>
+                    <button id="add-tab-btn" class="flex-shrink-0 p-2 sm:p-3 text-gray-500 hover:text-gray-700 border-l text-sm sm:text-base">+</button>
                 </div>
             </header>
 
             <!-- Tab Content -->
             <main class="flex-1">
-                <div id="tab-content" class="p-4">
+                <div id="tab-content" class="p-2 sm:p-4">
                     <!-- Content will be dynamically loaded -->
                 </div>
             </main>
         </div>
 
         <!-- Settings Modal -->
-        <div id="settings-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 items-center justify-center z-30 hidden">
-            <div class="bg-white p-6 rounded-lg max-w-md w-full mx-4">
-                <h3 class="text-xl font-bold mb-4">Настройки</h3>
+        <div id="settings-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 items-center justify-center z-30 hidden p-2">
+            <div class="bg-white p-4 sm:p-6 rounded-lg max-w-sm w-full mx-2">
+                <h3 class="text-lg sm:text-xl font-bold mb-4">Настройки</h3>
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium mb-2">Изменить пароль</label>
-                        <input type="password" id="new-password" class="w-full p-2 border rounded" placeholder="Новый пароль">
+                        <input type="password" id="new-password" class="w-full p-2 border rounded text-base" placeholder="Новый пароль">
                     </div>
-                    <div class="flex space-x-2">
-                        <button id="export-data-btn" class="flex-1 bg-green-600 text-white p-2 rounded hover:bg-green-700">Экспорт данных</button>
-                        <button id="import-data-btn" class="flex-1 bg-blue-600 text-white p-2 rounded hover:bg-blue-700">Импорт данных</button>
+                    <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                        <button id="export-data-btn" class="flex-1 bg-green-600 text-white p-2 rounded hover:bg-green-700 text-sm">Экспорт данных</button>
+                        <button id="import-data-btn" class="flex-1 bg-blue-600 text-white p-2 rounded hover:bg-blue-700 text-sm">Импорт данных</button>
                     </div>
                     <input type="file" id="import-file" accept=".json" class="hidden">
                 </div>
-                <div class="flex justify-end space-x-2 mt-6">
-                    <button id="save-settings-btn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Сохранить</button>
-                    <button id="close-settings-btn" class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">Закрыть</button>
+                <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 mt-6">
+                    <button id="save-settings-btn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm">Сохранить</button>
+                    <button id="close-settings-btn" class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 text-sm">Закрыть</button>
                 </div>
             </div>
         </div>
@@ -105,9 +135,9 @@
         <!-- Context Menu -->
         <div id="context-menu" class="fixed bg-white border rounded shadow-lg z-50 hidden">
             <div class="py-1">
-                <button class="block w-full text-left px-4 py-2 hover:bg-gray-100" data-action="rename">Переименовать</button>
-                <button class="block w-full text-left px-4 py-2 hover:bg-gray-100" data-action="duplicate">Дублировать</button>
-                <button class="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600" data-action="delete">Удалить</button>
+                <button class="block w-full text-left px-3 py-2 hover:bg-gray-100 text-sm" data-action="rename">Переименовать</button>
+                <button class="block w-full text-left px-3 py-2 hover:bg-gray-100 text-sm" data-action="duplicate">Дублировать</button>
+                <button class="block w-full text-left px-3 py-2 hover:bg-gray-100 text-red-600 text-sm" data-action="delete">Удалить</button>
             </div>
         </div>
     </div>
