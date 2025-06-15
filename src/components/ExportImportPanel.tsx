@@ -123,7 +123,7 @@ const ExportImportPanel: React.FC<ExportImportPanelProps> = ({ tabs, onImport })
       let content = '';
       
       tabs.forEach(tab => {
-        content += `=== ${tab.title} ===\n\n`;
+        content += `=== ${tab.id} ===\n\n`; // Заменили проверку по title на проверку по ID
         
         if (tab.id === '3') {
           content += tab.notes || '';

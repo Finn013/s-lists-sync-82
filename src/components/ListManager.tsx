@@ -239,7 +239,7 @@ const ListManager: React.FC = () => {
           };
         }
         
-        if (t.title === 'Выданные') {
+        if (t.id === '2') {
           const issuedItems = itemsWithRowNumbers.map(item => ({
             ...item,
             id: Date.now().toString() + Math.random(),
@@ -252,7 +252,7 @@ const ListManager: React.FC = () => {
           return { ...t, items: [...t.items, ...issuedItems] };
         }
         
-        if (t.title === 'Архив') {
+        if (t.id === '4') {
           return { ...t, archive: [...(t.archive || []), archiveEntry] };
         }
         
@@ -266,7 +266,7 @@ const ListManager: React.FC = () => {
   const returnItems = (fromTabId: string, toTabId: string) => {
     const fromTab = tabs.find(t => t.id === fromTabId);
     const toTab = tabs.find(t => t.id === toTabId);
-    const archiveTab = tabs.find(t => t.title === 'Архив');
+    const archiveTab = tabs.find(t => t.id === '4');
     
     if (!fromTab || !toTab) return;
 
