@@ -1,4 +1,3 @@
-
 export class DataManager {
   private dbName = 'SListApp';
   private dbVersion = 1;
@@ -39,16 +38,21 @@ export class DataManager {
 
   async setPassword(password: string): Promise<void> {
     const db = await this.ensureDB();
-    const transaction = db.transaction(['settings'], 'readwrite');
-    const store = transaction.objectStore('settings');
     
     // Simple hash for password storage (in production, use proper hashing)
     const hashedPassword = await this.hashPassword(password);
     
     return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['settings'], 'readwrite');
+      const store = transaction.objectStore('settings');
+      
       const request = store.put({ key: 'password', value: hashedPassword });
+      
       request.onsuccess = () => resolve();
       request.onerror = () => reject(request.error);
+      
+      transaction.onerror = () => reject(transaction.error);
+      transaction.onabort = () => reject(new Error('Transaction aborted'));
     });
   }
 
