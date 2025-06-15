@@ -75,11 +75,11 @@ const ToolbarPanel: React.FC<ToolbarPanelProps> = ({
       const updates: any = {};
       
       if (format === 'bold') {
-        updates.bold = true;
+        updates.bold = !updates.bold; // Toggle
       } else if (format === 'italic') {
-        updates.italic = true;
+        updates.italic = !updates.italic; // Toggle
       } else if (format === 'strikethrough') {
-        updates.strikethrough = true;
+        updates.strikethrough = !updates.strikethrough; // Toggle
       } else if (format === 'fontSize') {
         updates.fontSize = value === 'increase' ? 16 : 12;
       } else if (format === 'textColor') {
@@ -127,7 +127,7 @@ const ToolbarPanel: React.FC<ToolbarPanelProps> = ({
     let newStart = start;
     let newEnd = end;
     
-    // Проверяем, не находится ли выделенный текст уже в форматировании
+    // Логика переключения форматирования для заметок
     switch (format) {
       case 'bold':
         if (selectedText.startsWith('**') && selectedText.endsWith('**') && selectedText.length > 4) {

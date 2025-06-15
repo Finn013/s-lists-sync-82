@@ -36,6 +36,7 @@ const EditableColumn: React.FC<EditableColumnProps> = ({
 }) => {
   const [isResizing, setIsResizing] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const getInputStyle = (): React.CSSProperties => {
@@ -82,6 +83,38 @@ const EditableColumn: React.FC<EditableColumnProps> = ({
     setIsFocused(false);
   };
 
+  const applyFormatting = (format: keyof ColumnStyle, colorValue?: string) => {
+    const input = inputRef.current;
+    const cursorPosition = input?.selectionStart || 0;
+    
+    const newStyle = { ...style };
+    
+    if (format === 'bold') {
+      newStyle.bold = !newStyle.bold;
+    } else if (format === 'italic') {
+      newStyle.italic = !newStyle.italic;
+    } else if (format === 'strikethrough') {
+      newStyle.strikethrough = !newStyle.strikethrough;
+    } else if (format === 'textColor') {
+      newStyle.textColor = colorValue;
+    }
+    
+    onChange(value, newStyle);
+    
+    // Восстановить фокус и позицию курсора
+    setTimeout(() => {
+      if (input) {
+        input.focus();
+        input.setSelectionRange(cursorPosition, cursorPosition);
+      }
+    }, 0);
+  };
+
+  const colors = [
+    '#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', 
+    '#FF00FF', '#00FFFF', '#800000', '#008000', '#000080'
+  ];
+
   return (
     <div className="relative flex items-center">
       <input
@@ -96,6 +129,61 @@ const EditableColumn: React.FC<EditableColumnProps> = ({
         style={getInputStyle()}
         data-column-index={columnIndex}
       />
+      
+      {showFormatButton && isFocused && (
+        <div className="absolute top-full left-0 z-10 bg-white border rounded shadow-md p-1 flex gap-1 mt-1">
+          <Button
+            size="sm"
+            variant={style.bold ? "default" : "outline"}
+            onClick={() => applyFormatting('bold')}
+            className="text-xs px-2 py-1 h-6"
+          >
+            <span className="font-bold">Ж</span>
+          </Button>
+          <Button
+            size="sm"
+            variant={style.italic ? "default" : "outline"}
+            onClick={() => applyFormatting('italic')}
+            className="text-xs px-2 py-1 h-6"
+          >
+            <span className="italic">К</span>
+          </Button>
+          <Button
+            size="sm"
+            variant={style.strikethrough ? "default" : "outline"}
+            onClick={() => applyFormatting('strikethrough')}
+            className="text-xs px-2 py-1 h-6"
+          >
+            <span className="line-through">З</span>
+          </Button>
+          <Popover open={colorPickerOpen} onOpenChange={setColorPickerOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs px-2 py-1 h-6"
+              >
+                🎨
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2">
+              <div className="grid grid-cols-5 gap-1">
+                {colors.map(color => (
+                  <button
+                    key={color}
+                    className="w-6 h-6 rounded border-2 border-gray-300 hover:border-gray-500"
+                    style={{ backgroundColor: color }}
+                    onClick={() => {
+                      applyFormatting('textColor', color);
+                      setColorPickerOpen(false);
+                    }}
+                  />
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+      )}
       
       {onWidthChange && (
         <div
