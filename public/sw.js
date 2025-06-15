@@ -1,16 +1,16 @@
 
-const CACHE_NAME = 's-list-app-v4';
-const BASE_PATH = '';
+const CACHE_NAME = 's-list-app-v5';
+const BASE_PATH = '/s-lists-sync';
 const urlsToCache = [
-  './',
-  './index.html',
-  './manifest.json',
-  './icon-48.png',
-  './icon-72.png',
-  './icon-96.png',
-  './icon-144.png',
-  './icon-192.png',
-  './icon-512.png'
+  `${BASE_PATH}/`,
+  `${BASE_PATH}/index.html`,
+  `${BASE_PATH}/manifest.json`,
+  `${BASE_PATH}/icon-48.png`,
+  `${BASE_PATH}/icon-72.png`,
+  `${BASE_PATH}/icon-96.png`,
+  `${BASE_PATH}/icon-144.png`,
+  `${BASE_PATH}/icon-192.png`,
+  `${BASE_PATH}/icon-512.png`
 ];
 
 // Install service worker
@@ -75,7 +75,7 @@ self.addEventListener('fetch', (event) => {
           return response;
         }).catch(() => {
           if (event.request.mode === 'navigate') {
-            return caches.match('./index.html');
+            return caches.match(`${BASE_PATH}/index.html`);
           }
         });
       })

@@ -9,21 +9,25 @@
     <meta name="theme-color" content="#2563eb">
     
     <!-- PWA Manifest -->
-    <link rel="manifest" href="./manifest.json">
+    <link rel="manifest" href="/s-lists-sync/manifest.json">
     
     <!-- Icons -->
-    <link rel="icon" type="image/png" sizes="48x48" href="./icon-48.png">
-    <link rel="icon" type="image/png" sizes="72x72" href="./icon-72.png">
-    <link rel="icon" type="image/png" sizes="96x96" href="./icon-96.png">
-    <link rel="icon" type="image/png" sizes="144x144" href="./icon-144.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-    <link rel="apple-touch-icon" href="./icon-192.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="/s-lists-sync/icon-48.png">
+    <link rel="icon" type="image/png" sizes="72x72" href="/s-lists-sync/icon-72.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="/s-lists-sync/icon-96.png">
+    <link rel="icon" type="image/png" sizes="144x144" href="/s-lists-sync/icon-144.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/s-lists-sync/icon-192.png">
+    <link rel="apple-touch-icon" href="/s-lists-sync/icon-192.png">
     
     <!-- Mobile optimizations -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="S-Lists">
+    
+    <!-- Additional PWA meta tags -->
+    <meta name="msapplication-TileColor" content="#2563eb">
+    <meta name="msapplication-config" content="none">
 </head>
 <body>
     <div id="root" class="min-h-screen bg-gray-50">
@@ -113,8 +117,8 @@
       // PWA Service Worker registration
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
-          navigator.serviceWorker.register('./sw.js', {
-            scope: './'
+          navigator.serviceWorker.register('/s-lists-sync/sw.js', {
+            scope: '/s-lists-sync/'
           }).then(function(registration) {
             console.log('ServiceWorker registration successful with scope: ', registration.scope);
             
