@@ -12,6 +12,8 @@ import ToolbarPanel from './ToolbarPanel';
 import SeparatorDropdown from './SeparatorDropdown';
 import ArchiveRecord from './ArchiveRecord';
 import EditableColumn from './EditableColumn';
+import ExportImportPanel from './ExportImportPanel';
+import CopySavePanel from './CopySavePanel';
 import { DataManager } from '../utils/dataManager';
 import { CryptoManager } from '../utils/cryptoManager';
 
@@ -483,6 +485,20 @@ const ListManager: React.FC = () => {
     setFocusedColumnIndex(columnIndex);
   };
 
+  const handleImportTabs = (importedTabs: TabData[]) => {
+    const orderedTabs = [
+      { ...importedTabs.find(t => t.id === '1') || { id: '1', items: [], notes: '', archive: [] }, title: 'Основной список' },
+      { ...importedTabs.find(t => t.id === '2') || { id: '2', items: [], notes: '', archive: [] }, title: 'Выданные' },
+      { ...importedTabs.find(t => t.id === '3') || { id: '3', items: [], notes: '', archive: [] }, title: 'Заметки' },
+      { ...importedTabs.find(t => t.id === '4') || { id: '4', items: [], notes: '', archive: [] }, title: 'Архив' }
+    ].map(tab => ({
+      ...tab,
+      globalColumnWidths: tab.globalColumnWidths || [200, 200, 200, 200]
+    }));
+    
+    setTabs(orderedTabs);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto p-4">
@@ -518,16 +534,23 @@ const ListManager: React.FC = () => {
 
           {tabs.map(tab => (
             <TabsContent key={tab.id} value={tab.id} className="space-y-4">
-              <div className="flex items-center justify-between">
-                {(tab.id === '1' || tab.id === '3') && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setToolbarOpen(prev => ({ ...prev, [tab.id]: !prev[tab.id] }))}
-                  >
-                    ✓ {toolbarOpen[tab.id] ? 'Скрыть панель' : 'Показать панель'}
-                  </Button>
-                )}
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  {(tab.id === '1' || tab.id === '3') && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setToolbarOpen(prev => ({ ...prev, [tab.id]: !prev[tab.id] }))}
+                    >
+                      ✓ {toolbarOpen[tab.id] ? 'Скрыть панель' : 'Показать панель'}
+                    </Button>
+                  )}
+                  
+                  <ExportImportPanel 
+                    tabs={tabs} 
+                    onImport={handleImportTabs}
+                  />
+                </div>
                 
                 {tab.id === '4' && (
                   <Button
@@ -566,8 +589,10 @@ const ListManager: React.FC = () => {
                         Сдать
                       </Button>
                     )}
-                    <Button variant="outline">Копировать</Button>
-                    <Button variant="outline">Сохранить как</Button>
+                    <CopySavePanel 
+                      currentTab={tab}
+                      selectedItems={tab.items.filter(item => item.checked)}
+                    />
                   </div>
                 )}
               </div>
