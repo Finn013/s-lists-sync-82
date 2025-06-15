@@ -1,10 +1,10 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import TagSearch from './TagSearch';
 
 interface ListItem {
   id: string;
@@ -35,6 +35,7 @@ interface ToolbarPanelProps {
   onSearchChange: (term: string) => void;
   selectedItems: ListItem[];
   onUpdateItem: (tabId: string, itemId: string, updates: Partial<ListItem>) => void;
+  items: ListItem[];
 }
 
 const ToolbarPanel: React.FC<ToolbarPanelProps> = ({
@@ -45,7 +46,8 @@ const ToolbarPanel: React.FC<ToolbarPanelProps> = ({
   searchTerm,
   onSearchChange,
   selectedItems,
-  onUpdateItem
+  onUpdateItem,
+  items
 }) => {
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
 
@@ -180,18 +182,12 @@ const ToolbarPanel: React.FC<ToolbarPanelProps> = ({
 
           <Separator />
 
-          {/* Search */}
-          <div className="flex gap-2">
-            <Input
-              placeholder="Поиск по тексту и разделителям..."
-              value={searchTerm}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="flex-1"
-            />
-            <Button size="sm" variant="outline">
-              Найти
-            </Button>
-          </div>
+          {/* Search with Tags */}
+          <TagSearch 
+            searchTerm={searchTerm}
+            onSearchChange={onSearchChange}
+            items={items}
+          />
 
           <Separator />
 

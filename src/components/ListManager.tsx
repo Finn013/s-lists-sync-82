@@ -10,8 +10,17 @@ import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } 
 import ToolbarPanel from './ToolbarPanel';
 import SeparatorDropdown from './SeparatorDropdown';
 import ArchiveRecord from './ArchiveRecord';
+import EditableColumn from './EditableColumn';
 import { DataManager } from '../utils/dataManager';
 import { CryptoManager } from '../utils/cryptoManager';
+
+interface ColumnStyle {
+  bold?: boolean;
+  italic?: boolean;
+  strikethrough?: boolean;
+  fontSize?: number;
+  textColor?: string;
+}
 
 interface ListItem {
   id: string;
@@ -31,6 +40,8 @@ interface ListItem {
   strikethrough?: boolean;
   fontSize?: number;
   textColor?: string;
+  columnStyles?: ColumnStyle[];
+  columnWidths?: number[];
 }
 
 interface ArchiveEntry {
@@ -310,6 +321,59 @@ const ListManager: React.FC = () => {
     setClearArchiveDialogOpen(false);
   };
 
+  const deleteItem = (tabId: string, itemId: string) => {
+    const updatedTabs = tabs.map(tab =>
+      tab.id === tabId ? {
+        ...tab,
+        items: tab.items.filter(item => item.id !== itemId)
+      } : tab
+    );
+    setTabs(updatedTabs);
+    saveTabs();
+  };
+
+  const updateItemColumn = (tabId: string, itemId: string, columnIndex: number, value: string, style?: ColumnStyle) => {
+    const updatedTabs = tabs.map(tab =>
+      tab.id === tabId ? {
+        ...tab,
+        items: tab.items.map(item => {
+          if (item.id === itemId) {
+            const newColumns = [...item.columns];
+            newColumns[columnIndex] = value;
+            
+            const newColumnStyles = item.columnStyles ? [...item.columnStyles] : [];
+            if (style) {
+              newColumnStyles[columnIndex] = style;
+            }
+            
+            return { ...item, columns: newColumns, columnStyles: newColumnStyles };
+          }
+          return item;
+        })
+      } : tab
+    );
+    setTabs(updatedTabs);
+    saveTabs();
+  };
+
+  const updateColumnWidth = (tabId: string, itemId: string, columnIndex: number, width: number) => {
+    const updatedTabs = tabs.map(tab =>
+      tab.id === tabId ? {
+        ...tab,
+        items: tab.items.map(item => {
+          if (item.id === itemId) {
+            const newColumnWidths = item.columnWidths ? [...item.columnWidths] : [200, 200, 200, 200, 200];
+            newColumnWidths[columnIndex] = width;
+            return { ...item, columnWidths: newColumnWidths };
+          }
+          return item;
+        })
+      } : tab
+    );
+    setTabs(updatedTabs);
+    saveTabs();
+  };
+
   const handleTabRename = () => {
     const updatedTabs = tabs.map(tab =>
       tab.id === renamingTabId ? { ...tab, title: newTabTitle } : tab
@@ -339,6 +403,19 @@ const ListManager: React.FC = () => {
 
   const filteredItems = (items: ListItem[]) => {
     if (!searchTerm) return items;
+    
+    // Поддержка поиска по тегам
+    if (searchTerm.includes('#')) {
+      const tag = searchTerm.toLowerCase();
+      return items.filter(item => {
+        if (item.type === 'separator' && item.separatorText) {
+          return item.separatorText.toLowerCase().includes(tag);
+        }
+        return item.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               item.columns?.some(col => col.toLowerCase().includes(searchTerm.toLowerCase()));
+      });
+    }
+    
     return items.filter(item =>
       item.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.columns?.some(col => col.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -478,6 +555,7 @@ const ListManager: React.FC = () => {
                   onSearchChange={setSearchTerm}
                   selectedItems={tab.items.filter(item => item.checked)}
                   onUpdateItem={updateItem}
+                  items={tab.items}
                 />
               )}
 
@@ -532,6 +610,7 @@ const ListManager: React.FC = () => {
                                 item={item}
                                 tabId={tab.id}
                                 onUpdate={updateItem}
+                                onDelete={deleteItem}
                               />
                             </div>
                           ) : (
@@ -545,20 +624,16 @@ const ListManager: React.FC = () => {
                               <span className="w-8 text-sm text-gray-500">
                                 {tab.items.filter(i => i.type === 'item').indexOf(item) + 1}
                               </span>
-                              <div className="flex-1 grid grid-cols-5 gap-2">
+                              <div className="flex-1 flex gap-2">
                                 {item.columns.map((col, colIndex) => (
-                                  <input
+                                  <EditableColumn
                                     key={colIndex}
-                                    type="text"
                                     value={col}
-                                    onChange={(e) => {
-                                      const newColumns = [...item.columns];
-                                      newColumns[colIndex] = e.target.value;
-                                      updateItem(tab.id, item.id, { columns: newColumns });
-                                    }}
-                                    className={`p-1 border rounded text-sm ${item.issued ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                    onChange={(value, style) => updateItemColumn(tab.id, item.id, colIndex, value, style)}
+                                    style={item.columnStyles?.[colIndex]}
                                     disabled={item.issued}
-                                    style={getItemStyle(item)}
+                                    width={item.columnWidths?.[colIndex] || 200}
+                                    onWidthChange={(width) => updateColumnWidth(tab.id, item.id, colIndex, width)}
                                   />
                                 ))}
                               </div>

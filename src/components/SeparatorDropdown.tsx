@@ -17,7 +17,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ListItem {
   id: string;
@@ -38,9 +37,10 @@ interface SeparatorDropdownProps {
   item: ListItem;
   tabId: string;
   onUpdate: (tabId: string, itemId: string, updates: Partial<ListItem>) => void;
+  onDelete: (tabId: string, itemId: string) => void;
 }
 
-const SeparatorDropdown: React.FC<SeparatorDropdownProps> = ({ item, tabId, onUpdate }) => {
+const SeparatorDropdown: React.FC<SeparatorDropdownProps> = ({ item, tabId, onUpdate, onDelete }) => {
   const [isRenameOpen, setIsRenameOpen] = useState(false);
   const [newName, setNewName] = useState(item.separatorText || '');
   const [isColorOpen, setIsColorOpen] = useState(false);
@@ -71,10 +71,7 @@ const SeparatorDropdown: React.FC<SeparatorDropdownProps> = ({ item, tabId, onUp
   };
 
   const handleDelete = () => {
-    if (confirm('Удалить разделитель?')) {
-      // This would need to be handled at parent level
-      console.log('Delete separator:', item.id);
-    }
+    onDelete(tabId, item.id);
   };
 
   return (
