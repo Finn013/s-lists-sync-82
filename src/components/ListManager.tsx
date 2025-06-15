@@ -6,8 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import ToolbarPanel from './ToolbarPanel';
+import SeparatorDropdown from './SeparatorDropdown';
+import ArchiveRecord from './ArchiveRecord';
 import { DataManager } from '../utils/dataManager';
 import { CryptoManager } from '../utils/cryptoManager';
 
@@ -21,8 +23,17 @@ interface ListItem {
   issuedDate?: string;
   returnedDate?: string;
   type: 'item' | 'separator';
-  separatorLevel?: number;
   separatorText?: string;
+  separatorColor?: string;
+  separatorAlign?: 'left' | 'center' | 'right';
+}
+
+interface ArchiveEntry {
+  id: string;
+  items: string;
+  issuedTo: string;
+  issuedDate: string;
+  returnedDate?: string;
 }
 
 interface TabData {
@@ -30,6 +41,7 @@ interface TabData {
   title: string;
   items: ListItem[];
   notes?: string;
+  archive?: ArchiveEntry[];
 }
 
 const ListManager: React.FC = () => {
@@ -37,6 +49,7 @@ const ListManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('');
   const [toolbarOpen, setToolbarOpen] = useState<{ [key: string]: boolean }>({});
   const [searchTerm, setSearchTerm] = useState('');
+  const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [dataManager] = useState(() => new DataManager());
   const [cryptoManager] = useState(() => new CryptoManager());
 
@@ -49,16 +62,22 @@ const ListManager: React.FC = () => {
       const savedTabs = await dataManager.getTabs();
       if (savedTabs.length === 0) {
         const defaultTabs: TabData[] = [
-          { id: '1', title: 'Основной список', items: [], notes: '' },
-          { id: '2', title: 'Выданные', items: [], notes: '' },
-          { id: '3', title: 'Заметки', items: [], notes: '' }
+          { id: '1', title: 'Основной список', items: [], notes: '', archive: [] },
+          { id: '2', title: 'Выданные', items: [], notes: '', archive: [] },
+          { id: '3', title: 'Заметки', items: [], notes: '', archive: [] },
+          { id: '4', title: 'Архив', items: [], notes: '', archive: [] }
         ];
         setTabs(defaultTabs);
         setActiveTab('1');
         await dataManager.saveTabs(defaultTabs);
       } else {
-        setTabs(savedTabs);
-        setActiveTab(savedTabs[0].id);
+        // Ensure all tabs have archive property
+        const updatedTabs = savedTabs.map(tab => ({
+          ...tab,
+          archive: tab.archive || []
+        }));
+        setTabs(updatedTabs);
+        setActiveTab(updatedTabs[0].id);
       }
     } catch (error) {
       console.error('Error initializing tabs:', error);
@@ -71,52 +90,6 @@ const ListManager: React.FC = () => {
     } catch (error) {
       console.error('Error saving tabs:', error);
     }
-  };
-
-  const addNewTab = () => {
-    const newTab: TabData = {
-      id: Date.now().toString(),
-      title: `Вкладка ${tabs.length + 1}`,
-      items: [],
-      notes: ''
-    };
-    const updatedTabs = [...tabs, newTab];
-    setTabs(updatedTabs);
-    setActiveTab(newTab.id);
-    saveTabs();
-  };
-
-  const duplicateTab = (tabId: string) => {
-    const tabToDuplicate = tabs.find(tab => tab.id === tabId);
-    if (tabToDuplicate) {
-      const newTab: TabData = {
-        ...tabToDuplicate,
-        id: Date.now().toString(),
-        title: `${tabToDuplicate.title} (копия)`,
-        items: tabToDuplicate.items.map(item => ({ ...item, id: Date.now().toString() + Math.random() }))
-      };
-      const updatedTabs = [...tabs, newTab];
-      setTabs(updatedTabs);
-      saveTabs();
-    }
-  };
-
-  const renameTab = (tabId: string, newTitle: string) => {
-    const updatedTabs = tabs.map(tab =>
-      tab.id === tabId ? { ...tab, title: newTitle } : tab
-    );
-    setTabs(updatedTabs);
-    saveTabs();
-  };
-
-  const deleteTab = (tabId: string) => {
-    if (tabs.length <= 1) return;
-    const updatedTabs = tabs.filter(tab => tab.id !== tabId);
-    setTabs(updatedTabs);
-    if (activeTab === tabId) {
-      setActiveTab(updatedTabs[0].id);
-    }
-    saveTabs();
   };
 
   const addListItem = (tabId: string, text: string = '') => {
@@ -136,7 +109,7 @@ const ListManager: React.FC = () => {
     saveTabs();
   };
 
-  const addSeparator = (tabId: string, level: number) => {
+  const addSeparator = (tabId: string) => {
     const newSeparator: ListItem = {
       id: Date.now().toString(),
       text: '',
@@ -144,8 +117,9 @@ const ListManager: React.FC = () => {
       checked: false,
       issued: false,
       type: 'separator',
-      separatorLevel: level,
-      separatorText: `Разделитель ${level} уровня`
+      separatorText: 'Новый разделитель',
+      separatorColor: '#e5e7eb',
+      separatorAlign: 'left'
     };
     
     const updatedTabs = tabs.map(tab =>
@@ -168,12 +142,50 @@ const ListManager: React.FC = () => {
     saveTabs();
   };
 
+  const deleteSelected = (tabId: string) => {
+    const updatedTabs = tabs.map(tab =>
+      tab.id === tabId ? {
+        ...tab,
+        items: tab.items.filter(item => !item.checked)
+      } : tab
+    );
+    setTabs(updatedTabs);
+    saveTabs();
+  };
+
+  const moveItem = (tabId: string, fromIndex: number, toIndex: number) => {
+    const tab = tabs.find(t => t.id === tabId);
+    if (!tab) return;
+
+    const newItems = [...tab.items];
+    const [moved] = newItems.splice(fromIndex, 1);
+    newItems.splice(toIndex, 0, moved);
+
+    const updatedTabs = tabs.map(t =>
+      t.id === tabId ? { ...t, items: newItems } : t
+    );
+    setTabs(updatedTabs);
+    saveTabs();
+  };
+
   const issueItems = (tabId: string, issuedTo: string) => {
     const tab = tabs.find(t => t.id === tabId);
     if (!tab) return;
 
     const checkedItems = tab.items.filter(item => item.checked && item.type === 'item');
     const currentDate = new Date().toLocaleDateString('ru-RU');
+
+    // Create archive entry
+    const itemNumbers = checkedItems.map((_, index) => 
+      tab.items.filter(i => i.type === 'item').indexOf(checkedItems[index]) + 1
+    );
+    
+    const archiveEntry: ArchiveEntry = {
+      id: Date.now().toString(),
+      items: `№ ${itemNumbers.join(', ')}`,
+      issuedTo,
+      issuedDate: currentDate
+    };
 
     // Update items in current tab
     const updatedCurrentTab = {
@@ -187,6 +199,8 @@ const ListManager: React.FC = () => {
 
     // Add items to "Выданные" tab
     const issuedTab = tabs.find(t => t.title === 'Выданные');
+    const archiveTab = tabs.find(t => t.title === 'Архив');
+    
     let updatedTabs = tabs.map(t => t.id === tabId ? updatedCurrentTab : t);
 
     if (issuedTab) {
@@ -204,6 +218,13 @@ const ListManager: React.FC = () => {
       );
     }
 
+    // Add to archive
+    if (archiveTab) {
+      updatedTabs = updatedTabs.map(t =>
+        t.id === archiveTab.id ? { ...t, archive: [...(t.archive || []), archiveEntry] } : t
+      );
+    }
+
     setTabs(updatedTabs);
     saveTabs();
   };
@@ -211,79 +232,51 @@ const ListManager: React.FC = () => {
   const returnItems = (fromTabId: string, toTabId: string) => {
     const fromTab = tabs.find(t => t.id === fromTabId);
     const toTab = tabs.find(t => t.id === toTabId);
+    const archiveTab = tabs.find(t => t.title === 'Архив');
+    
     if (!fromTab || !toTab) return;
 
     const checkedItems = fromTab.items.filter(item => item.checked);
     const currentDate = new Date().toLocaleDateString('ru-RU');
 
-    // Remove from current tab
-    const updatedFromTab = {
-      ...fromTab,
-      items: fromTab.items.filter(item => !item.checked)
-    };
+    // Update archive with return date
+    if (archiveTab) {
+      const updatedArchive = archiveTab.archive?.map(entry => {
+        if (checkedItems.some(item => item.issuedTo === entry.issuedTo && item.issuedDate === entry.issuedDate)) {
+          return { ...entry, returnedDate: currentDate };
+        }
+        return entry;
+      }) || [];
 
-    // Update items in original tab
-    const returnedItems = checkedItems.map(item => ({
-      ...item,
-      issued: false,
-      returnedDate: currentDate,
-      checked: false
-    }));
+      const updatedTabs = tabs.map(t => {
+        if (t.id === fromTabId) {
+          return { ...t, items: t.items.filter(item => !item.checked) };
+        }
+        if (t.id === toTabId) {
+          const returnedItems = checkedItems.map(item => ({
+            ...item,
+            issued: false,
+            returnedDate: currentDate,
+            checked: false
+          }));
+          return {
+            ...t,
+            items: t.items.map(originalItem => {
+              const returnedItem = returnedItems.find(ri => 
+                ri.text === originalItem.text && originalItem.issued
+              );
+              return returnedItem ? { ...originalItem, ...returnedItem } : originalItem;
+            })
+          };
+        }
+        if (t.id === archiveTab.id) {
+          return { ...t, archive: updatedArchive };
+        }
+        return t;
+      });
 
-    const updatedToTab = {
-      ...toTab,
-      items: toTab.items.map(originalItem => {
-        const returnedItem = returnedItems.find(ri => 
-          ri.text === originalItem.text && originalItem.issued
-        );
-        return returnedItem ? { ...originalItem, ...returnedItem } : originalItem;
-      })
-    };
-
-    const updatedTabs = tabs.map(t => {
-      if (t.id === fromTabId) return updatedFromTab;
-      if (t.id === toTabId) return updatedToTab;
-      return t;
-    });
-
-    setTabs(updatedTabs);
-    saveTabs();
-  };
-
-  const exportData = async () => {
-    try {
-      const encrypted = await cryptoManager.encrypt(JSON.stringify(tabs));
-      const dataStr = JSON.stringify({ data: encrypted, timestamp: Date.now() });
-      const dataBlob = new Blob([dataStr], { type: 'application/json' });
-      
-      const url = URL.createObjectURL(dataBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `s-lists-backup-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Export error:', error);
-      alert('Ошибка при экспорте данных');
-    }
-  };
-
-  const importData = async (file: File) => {
-    try {
-      const text = await file.text();
-      const imported = JSON.parse(text);
-      const decrypted = await cryptoManager.decrypt(imported.data);
-      const importedTabs = JSON.parse(decrypted);
-      
-      setTabs(importedTabs);
-      setActiveTab(importedTabs[0]?.id || '');
-      await saveTabs();
-      alert('Данные успешно импортированы');
-    } catch (error) {
-      console.error('Import error:', error);
-      alert('Ошибка при импорте данных');
+      setTabs(updatedTabs);
+      saveTabs();
     }
   };
 
@@ -298,21 +291,31 @@ const ListManager: React.FC = () => {
     );
   };
 
+  const handleDragStart = (e: React.DragEvent, itemId: string, index: number) => {
+    setDraggedItem(itemId);
+    e.dataTransfer.setData('text/plain', index.toString());
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    const dragIndex = parseInt(e.dataTransfer.getData('text/plain'));
+    if (dragIndex !== dropIndex && activeTab) {
+      moveItem(activeTab, dragIndex, dropIndex);
+    }
+    setDraggedItem(null);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto p-4">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 mb-4">
+          <TabsList className="grid w-full grid-cols-4 mb-4">
             {tabs.map(tab => (
-              <TabsTrigger
-                key={tab.id}
-                value={tab.id}
-                className="relative group"
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  // Show context menu for tab operations
-                }}
-              >
+              <TabsTrigger key={tab.id} value={tab.id}>
                 {tab.title}
               </TabsTrigger>
             ))}
@@ -330,7 +333,7 @@ const ListManager: React.FC = () => {
                   ✓ {toolbarOpen[tab.id] ? 'Скрыть панель' : 'Показать панель'}
                 </Button>
                 
-                {tab.title !== 'Заметки' && (
+                {tab.title !== 'Заметки' && tab.title !== 'Архив' && (
                   <div className="flex space-x-2">
                     <Button
                       onClick={() => {
@@ -358,6 +361,7 @@ const ListManager: React.FC = () => {
                   tabId={tab.id}
                   onAddItem={addListItem}
                   onAddSeparator={addSeparator}
+                  onDeleteSelected={deleteSelected}
                   searchTerm={searchTerm}
                   onSearchChange={setSearchTerm}
                 />
@@ -381,27 +385,43 @@ const ListManager: React.FC = () => {
                     />
                   </CardContent>
                 </Card>
+              ) : tab.title === 'Архив' ? (
+                <ArchiveRecord archive={tab.archive || []} />
               ) : (
                 <Card>
                   <CardContent className="p-4">
                     <div className="space-y-2">
                       {filteredItems(tab.items).map((item, index) => (
-                        <div key={item.id}>
+                        <div
+                          key={item.id}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, item.id, index)}
+                          onDragOver={handleDragOver}
+                          onDrop={(e) => handleDrop(e, index)}
+                          className={`cursor-move ${draggedItem === item.id ? 'opacity-50' : ''}`}
+                        >
                           {item.type === 'separator' ? (
-                            <div className={`flex items-center space-x-2 py-2 px-3 rounded-lg bg-gray-${100 + (item.separatorLevel || 1) * 50} border-l-4 border-blue-${300 + (item.separatorLevel || 1) * 100}`}>
-                              <Badge variant="secondary">
-                                Уровень {item.separatorLevel}
-                              </Badge>
-                              <input
-                                type="text"
-                                value={item.separatorText || ''}
-                                onChange={(e) => updateItem(tab.id, item.id, { separatorText: e.target.value })}
-                                className="flex-1 bg-transparent border-none outline-none font-medium"
-                                placeholder="Название разделителя"
+                            <div 
+                              className="flex items-center space-x-2 py-2 px-3 rounded-lg border-l-4"
+                              style={{ 
+                                backgroundColor: item.separatorColor || '#e5e7eb',
+                                borderLeftColor: item.separatorColor || '#6b7280'
+                              }}
+                            >
+                              <div 
+                                className="flex-1 font-medium"
+                                style={{ textAlign: item.separatorAlign || 'left' }}
+                              >
+                                {item.separatorText}
+                              </div>
+                              <SeparatorDropdown
+                                item={item}
+                                tabId={tab.id}
+                                onUpdate={updateItem}
                               />
                             </div>
                           ) : (
-                            <div className={`flex items-center space-x-2 p-2 rounded-lg border ${item.issued ? 'bg-gray-100 text-gray-500' : 'bg-white'}`}>
+                            <div className={`flex items-center space-x-2 p-2 rounded-lg border ${item.issued ? 'bg-gray-200 text-gray-500' : 'bg-white'}`}>
                               <Checkbox
                                 checked={item.checked}
                                 onCheckedChange={(checked) => 
@@ -411,7 +431,7 @@ const ListManager: React.FC = () => {
                               <span className="w-8 text-sm text-gray-500">
                                 {tab.items.filter(i => i.type === 'item').indexOf(item) + 1}
                               </span>
-                              <div className="flex-1 grid grid-cols-5 gap-2">
+                              <div className="flex-1 grid grid-cols-5 gap-2 resize-x">
                                 {item.columns.map((col, colIndex) => (
                                   <input
                                     key={colIndex}
@@ -422,8 +442,8 @@ const ListManager: React.FC = () => {
                                       newColumns[colIndex] = e.target.value;
                                       updateItem(tab.id, item.id, { columns: newColumns });
                                     }}
-                                    className="p-1 border rounded text-sm"
-                                    placeholder={`Колонка ${colIndex + 1}`}
+                                    className={`p-1 border rounded text-sm ${item.issued ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                    disabled={item.issued}
                                   />
                                 ))}
                               </div>
@@ -462,15 +482,6 @@ const ListManager: React.FC = () => {
             </TabsContent>
           ))}
         </Tabs>
-
-        {/* Add Tab Button */}
-        <Button
-          onClick={addNewTab}
-          className="fixed bottom-4 right-4 rounded-full w-12 h-12"
-          size="sm"
-        >
-          +
-        </Button>
       </div>
     </div>
   );

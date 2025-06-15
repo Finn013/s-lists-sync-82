@@ -8,7 +8,8 @@ import { Separator } from '@/components/ui/separator';
 interface ToolbarPanelProps {
   tabId: string;
   onAddItem: (tabId: string, text?: string) => void;
-  onAddSeparator: (tabId: string, level: number) => void;
+  onAddSeparator: (tabId: string) => void;
+  onDeleteSelected: (tabId: string) => void;
   searchTerm: string;
   onSearchChange: (term: string) => void;
 }
@@ -17,6 +18,7 @@ const ToolbarPanel: React.FC<ToolbarPanelProps> = ({
   tabId,
   onAddItem,
   onAddSeparator,
+  onDeleteSelected,
   searchTerm,
   onSearchChange
 }) => {
@@ -33,17 +35,25 @@ const ToolbarPanel: React.FC<ToolbarPanelProps> = ({
             >
               Добавить строку
             </Button>
-            <Button size="sm" variant="outline">
-              Сортировать
+            <Button
+              size="sm"
+              onClick={() => onAddSeparator(tabId)}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Создать разделитель
             </Button>
-            <Button size="sm" variant="outline">
+            <Button 
+              size="sm" 
+              variant="destructive"
+              onClick={() => onDeleteSelected(tabId)}
+            >
               Удалить выбранные
             </Button>
           </div>
 
           <Separator />
 
-          {/* Second Row - Text Formatting */}
+          {/* Text Formatting */}
           <div className="flex flex-wrap gap-2">
             <Button size="sm" variant="outline">
               <span className="text-lg font-bold">Ж</span>
@@ -67,7 +77,7 @@ const ToolbarPanel: React.FC<ToolbarPanelProps> = ({
 
           <Separator />
 
-          {/* Third Row - Search */}
+          {/* Search */}
           <div className="flex gap-2">
             <Input
               placeholder="Поиск по тексту и разделителям..."
@@ -82,27 +92,7 @@ const ToolbarPanel: React.FC<ToolbarPanelProps> = ({
 
           <Separator />
 
-          {/* Fourth Row - Separators */}
-          <div className="space-y-2">
-            <div className="text-sm font-medium text-gray-700">Разделители:</div>
-            <div className="flex flex-wrap gap-2">
-              {[1, 2, 3, 4].map(level => (
-                <Button
-                  key={level}
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onAddSeparator(tabId, level)}
-                  className={`bg-blue-${100 + level * 50} hover:bg-blue-${200 + level * 50}`}
-                >
-                  Разделитель {level} ранга
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Fifth Row - Alignment */}
+          {/* Alignment */}
           <div className="flex flex-wrap gap-2">
             <Button size="sm" variant="outline">
               ⬅️
