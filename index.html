@@ -1,60 +1,50 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,minimal-ui">
     <title>S- - Список приложение</title>
     <meta name="description" content="Приложение для создания и управления списками">
     <meta name="theme-color" content="#2563eb">
-    
-    <!-- PWA Manifest -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="S-Lists">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <!-- Apple icon -->
+    <link rel="apple-touch-icon" href="/s-lists-sync/icon-192.png">
+    <!-- Use correct manifest path for github pages -->
     <link rel="manifest" href="/s-lists-sync/manifest.json">
-    
-    <!-- Icons -->
     <link rel="icon" type="image/png" sizes="48x48" href="/s-lists-sync/icon-48.png">
     <link rel="icon" type="image/png" sizes="72x72" href="/s-lists-sync/icon-72.png">
     <link rel="icon" type="image/png" sizes="96x96" href="/s-lists-sync/icon-96.png">
     <link rel="icon" type="image/png" sizes="144x144" href="/s-lists-sync/icon-144.png">
     <link rel="icon" type="image/png" sizes="192x192" href="/s-lists-sync/icon-192.png">
-    <link rel="apple-touch-icon" href="/s-lists-sync/icon-192.png">
-    
-    <!-- Mobile optimizations -->
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="S-Lists">
-    
-    <!-- Additional PWA meta tags -->
+    <!-- Better color for ms -->
     <meta name="msapplication-TileColor" content="#2563eb">
     <meta name="msapplication-config" content="none">
-    
-    <!-- Prevent text size adjustment on iOS -->
     <style>
       body {
         -webkit-text-size-adjust: 100%;
         -ms-text-size-adjust: 100%;
+        overflow-x: hidden;
       }
-      
-      /* Prevent zoom on input focus on iOS */
-      input[type="text"],
-      input[type="password"],
-      input[type="email"],
-      input[type="number"],
-      textarea,
-      select {
+      #root, html, body {
+        min-width: 0 !important;
+        box-sizing: border-box;
+      }
+      /* prevent iOS zoom */
+      input, textarea, select {
         font-size: 16px !important;
       }
-      
-      @media screen and (max-width: 768px) {
-        input[type="text"],
-        input[type="password"],
-        input[type="email"],
-        input[type="number"],
-        textarea,
-        select {
-          font-size: 16px !important;
-          transform: scale(1);
+      @media screen and (max-width: 600px) {
+        .shadcn-DialogContent,
+        .shadcn_DialogContent,
+        [class*="DialogContent"] {
+          border-radius: 16px !important;
+          width: 96vw !important;
+          min-width: 0 !important;
+          max-width: 420px !important;
+          padding: 0.5rem !important;
         }
       }
     </style>

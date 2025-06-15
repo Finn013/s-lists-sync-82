@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Download, X } from 'lucide-react';
@@ -39,9 +38,8 @@ const PWAInstaller: React.FC = () => {
     setIsStandalone(standalone);
     console.log('PWAInstaller: Standalone режим:', standalone);
 
-    // Обработчик события beforeinstallprompt
+    // -- Only show install prompt if browser supports it, and not standalone --
     const handleBeforeInstallPrompt = (e: Event) => {
-      console.log('PWAInstaller: beforeinstallprompt событие получено');
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setShowInstallBanner(true);
@@ -57,21 +55,17 @@ const PWAInstaller: React.FC = () => {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
 
+    // Adjust when to show: only if prompt supported or iOS/Android fallback
     // Для всех устройств показываем баннер, если не standalone
+    // Enhance always showing for mobile if not standalone and not rejected
     if (!standalone) {
-      console.log('PWAInstaller: Показываем баннер');
       setTimeout(() => {
         const wasRejected = localStorage.getItem('pwa-install-rejected');
-        if (wasRejected) {
-          const rejectedTime = parseInt(wasRejected);
-          const dayInMs = 24 * 60 * 60 * 1000;
-          if (Date.now() - rejectedTime < dayInMs) {
-            console.log('PWAInstaller: Пользователь недавно отклонил установку');
-            return;
-          }
-        }
+        const rejectedTime = wasRejected ? parseInt(wasRejected) : 0;
+        const dayInMs = 24 * 60 * 60 * 1000;
+        if (wasRejected && (Date.now() - rejectedTime < dayInMs)) return;
         setShowInstallBanner(true);
-      }, 2000);
+      }, 1000);
     }
 
     return () => {
@@ -81,57 +75,38 @@ const PWAInstaller: React.FC = () => {
   }, []);
 
   const handleInstallClick = async () => {
-    console.log('PWAInstaller: Попытка установки');
     if (deferredPrompt) {
       try {
         await deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
-        
-        console.log('PWAInstaller: Результат установки:', outcome);
-        
         if (outcome === 'accepted') {
-          console.log('PWAInstaller: Пользователь принял установку');
+          //
         } else {
-          console.log('PWAInstaller: Пользователь отклонил установку');
           localStorage.setItem('pwa-install-rejected', Date.now().toString());
         }
-        
         setDeferredPrompt(null);
         setShowInstallBanner(false);
       } catch (error) {
-        console.error('PWAInstaller: Ошибка при установке:', error);
+        // handle error
       }
     }
   };
-
   const handleDismiss = () => {
-    console.log('PWAInstaller: Баннер закрыт пользователем');
     setShowInstallBanner(false);
     localStorage.setItem('pwa-install-rejected', Date.now().toString());
   };
 
-  // Не показываем, если приложение уже установлено
-  if (isStandalone) {
-    console.log('PWAInstaller: Приложение уже установлено');
-    return null;
-  }
-
-  // Не показываем, если баннер скрыт
-  if (!showInstallBanner) {
-    return null;
-  }
-
-  console.log('PWAInstaller: Рендерим баннер, deferredPrompt:', !!deferredPrompt);
+  if (isStandalone || !showInstallBanner) return null;
 
   return (
-    <div className="fixed bottom-4 left-2 right-2 z-50 mx-auto max-w-sm md:left-auto md:right-4">
-      <div className="bg-blue-600 text-white p-3 rounded-lg shadow-lg border border-blue-500">
+    <div className="fixed bottom-2 left-0 right-0 z-50 px-2">
+      <div className="bg-blue-600 text-white p-3 rounded-xl shadow-lg border border-blue-500 max-w-md mx-auto w-full">
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1 pr-2">
             <h3 className="font-semibold text-base mb-1">📱 Установить S-Lists</h3>
             {isIOS ? (
               <p className="text-xs opacity-90">
-                Нажмите <span className="font-semibold">⎙</span> в Safari → "На экран Домой"
+                В Safari: <span className="font-semibold">Поделиться</span> → "На экран Домой"
               </p>
             ) : (
               <p className="text-xs opacity-90">
@@ -149,7 +124,8 @@ const PWAInstaller: React.FC = () => {
           </Button>
         </div>
         
-        {deferredPrompt && (
+        {/* Show install button as long as possible, not only with deferredPrompt */}
+        {(deferredPrompt || (!isIOS && !isStandalone && 'onbeforeinstallprompt' in window)) && (
           <Button
             onClick={handleInstallClick}
             className="w-full bg-white text-blue-600 hover:bg-gray-100 text-sm py-2 h-8"
@@ -158,7 +134,6 @@ const PWAInstaller: React.FC = () => {
             Установить
           </Button>
         )}
-        
         {!deferredPrompt && isAndroid && (
           <div className="text-xs opacity-80 mt-1">
             В Chrome: Меню → "Установить приложение"
@@ -168,5 +143,4 @@ const PWAInstaller: React.FC = () => {
     </div>
   );
 };
-
 export default PWAInstaller;

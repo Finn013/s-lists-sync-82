@@ -83,9 +83,10 @@ const PasswordManager: React.FC<PasswordManagerProps> = ({ onAuthenticated }) =>
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 p-2 sm:p-4">
-        <Card className="w-full max-w-sm mx-auto">
-          <CardContent className="flex items-center justify-center p-6 sm:p-8">
-            <div className="text-center">
+        {/* SM and below: fullscreen, never overflow */}
+        <Card className="w-full max-w-xs xs:max-w-sm mx-auto">
+          <CardContent className="flex items-center justify-center p-4 sm:p-8">
+            <div className="text-center w-full">
               <div className="text-2xl font-bold text-blue-600 mb-4">S-</div>
               <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto"></div>
             </div>
@@ -97,15 +98,15 @@ const PasswordManager: React.FC<PasswordManagerProps> = ({ onAuthenticated }) =>
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-2 sm:p-4">
-      <Card className="w-full max-w-sm mx-auto">
-        <CardHeader className="text-center px-4 pt-6 pb-4">
+      <Card className="w-full max-w-xs xs:max-w-sm mx-auto">
+        <CardHeader className="text-center px-2 pt-6 pb-2">
           <CardTitle className="text-2xl sm:text-3xl font-bold text-blue-600">S-</CardTitle>
-          <p className="text-gray-600 text-sm sm:text-base px-2">
+          <p className="text-gray-600 text-xs sm:text-base px-2">
             {isFirstTime ? 'Добро пожаловать! Создайте пароль для защиты приложения' : 'Введите пароль для входа'}
           </p>
         </CardHeader>
-        <CardContent className="px-4 pb-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <CardContent className="px-2 pb-4">
+          <form onSubmit={handleSubmit} className="space-y-3">
             <div>
               <Input
                 type="password"
@@ -114,7 +115,7 @@ const PasswordManager: React.FC<PasswordManagerProps> = ({ onAuthenticated }) =>
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoFocus
-                className="text-base" // Prevents zoom on iOS
+                className="text-base"
               />
             </div>
             
@@ -126,24 +127,24 @@ const PasswordManager: React.FC<PasswordManagerProps> = ({ onAuthenticated }) =>
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
-                  className="text-base" // Prevents zoom on iOS
+                  className="text-base"
                 />
               </div>
             )}
 
             {error && (
-              <div className="text-red-600 text-sm text-center px-2">
+              <div className="text-red-600 text-xs text-center px-2">
                 {error}
               </div>
             )}
 
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full text-base h-10">
               {isFirstTime ? 'Создать пароль' : 'Войти'}
             </Button>
           </form>
           
           {isFirstTime && (
-            <div className="mt-4 text-xs text-gray-500 text-center px-2">
+            <div className="mt-3 text-xs text-gray-500 text-center px-2">
               Пароль будет использоваться для защиты ваших данных.<br />
               Минимум 4 символа.
             </div>
@@ -153,5 +154,4 @@ const PasswordManager: React.FC<PasswordManagerProps> = ({ onAuthenticated }) =>
     </div>
   );
 };
-
 export default PasswordManager;

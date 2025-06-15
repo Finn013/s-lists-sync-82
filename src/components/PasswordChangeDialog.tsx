@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -78,7 +77,7 @@ const PasswordChangeDialog: React.FC = () => {
           🔑 <span className="hidden sm:inline ml-1">Сменить пароль</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-xs xs:max-w-sm w-full p-4">
         <DialogHeader>
           <DialogTitle>Смена пароля</DialogTitle>
         </DialogHeader>
@@ -91,6 +90,7 @@ const PasswordChangeDialog: React.FC = () => {
               onChange={(e) => setCurrentPassword(e.target.value)}
               required
               disabled={isLoading}
+              className="text-base"
             />
           </div>
           
@@ -102,6 +102,7 @@ const PasswordChangeDialog: React.FC = () => {
               onChange={(e) => setNewPassword(e.target.value)}
               required
               disabled={isLoading}
+              className="text-base"
             />
           </div>
           
@@ -113,6 +114,7 @@ const PasswordChangeDialog: React.FC = () => {
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
               disabled={isLoading}
+              className="text-base"
             />
           </div>
 

@@ -207,7 +207,8 @@ const ExportImportPanel: React.FC<ExportImportPanelProps> = ({ tabs, onImport })
       </div>
 
       <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
-        <DialogContent>
+        <DialogContent className="w-full max-w-xs xs:max-w-sm">
+          {/* w-full for mobile */}
           <DialogHeader>
             <DialogTitle>Экспорт данных</DialogTitle>
           </DialogHeader>
@@ -220,6 +221,7 @@ const ExportImportPanel: React.FC<ExportImportPanelProps> = ({ tabs, onImport })
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Пароль для шифрования"
+              className="text-base"
             />
           </div>
           <DialogFooter>
@@ -234,7 +236,7 @@ const ExportImportPanel: React.FC<ExportImportPanelProps> = ({ tabs, onImport })
       </Dialog>
 
       <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
-        <DialogContent>
+        <DialogContent className="w-full max-w-xs xs:max-w-sm">
           <DialogHeader>
             <DialogTitle>Импорт данных</DialogTitle>
           </DialogHeader>
@@ -253,6 +255,7 @@ const ExportImportPanel: React.FC<ExportImportPanelProps> = ({ tabs, onImport })
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Пароль для расшифровки"
+              className="text-base"
             />
           </div>
           <DialogFooter>
