@@ -1,16 +1,16 @@
 
-const CACHE_NAME = 's-list-app-v3';
-const BASE_PATH = '/s-lists-sync';
+const CACHE_NAME = 's-list-app-v4';
+const BASE_PATH = '';
 const urlsToCache = [
-  `${BASE_PATH}/`,
-  `${BASE_PATH}/index.html`,
-  `${BASE_PATH}/manifest.json`,
-  `${BASE_PATH}/icon-48.png`,
-  `${BASE_PATH}/icon-72.png`,
-  `${BASE_PATH}/icon-96.png`,
-  `${BASE_PATH}/icon-144.png`,
-  `${BASE_PATH}/icon-192.png`,
-  `${BASE_PATH}/icon-512.png`
+  './',
+  './index.html',
+  './manifest.json',
+  './icon-48.png',
+  './icon-72.png',
+  './icon-96.png',
+  './icon-144.png',
+  './icon-192.png',
+  './icon-512.png'
 ];
 
 // Install service worker
@@ -23,7 +23,6 @@ self.addEventListener('install', (event) => {
         return cache.addAll(urlsToCache);
       })
       .then(() => {
-        // Принудительно активируем новый SW
         return self.skipWaiting();
       })
   );
@@ -43,7 +42,6 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      // Принудительно берем контроль над всеми клиентами
       return self.clients.claim();
     })
   );
@@ -51,31 +49,22 @@ self.addEventListener('activate', (event) => {
 
 // Serve cached content when offline
 self.addEventListener('fetch', (event) => {
-  // Обрабатываем только GET запросы
   if (event.request.method !== 'GET') {
-    return;
-  }
-
-  // Проверяем, что запрос относится к нашему домену
-  if (!event.request.url.includes(location.origin)) {
     return;
   }
 
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
-        // Возвращаем кешированную версию или загружаем из сети
         if (response) {
           return response;
         }
         
         return fetch(event.request).then((response) => {
-          // Проверяем что ответ валидный
           if (!response || response.status !== 200 || response.type !== 'basic') {
             return response;
           }
 
-          // Клонируем ответ для кеширования
           const responseToCache = response.clone();
 
           caches.open(CACHE_NAME)
@@ -85,20 +74,10 @@ self.addEventListener('fetch', (event) => {
 
           return response;
         }).catch(() => {
-          // В случае ошибки сети, возвращаем offline страницу для навигации
           if (event.request.mode === 'navigate') {
-            return caches.match(`${BASE_PATH}/`);
+            return caches.match('./index.html');
           }
         });
       })
   );
-});
-
-// Обработка событий PWA
-self.addEventListener('beforeinstallprompt', (event) => {
-  console.log('Before install prompt fired');
-});
-
-self.addEventListener('appinstalled', (event) => {
-  console.log('App was installed');
 });

@@ -7,13 +7,23 @@
     <title>S- - Список приложение</title>
     <meta name="description" content="Приложение для создания и управления списками">
     <meta name="theme-color" content="#2563eb">
+    
+    <!-- PWA Manifest -->
     <link rel="manifest" href="./manifest.json">
+    
+    <!-- Icons -->
     <link rel="icon" type="image/png" sizes="48x48" href="./icon-48.png">
     <link rel="icon" type="image/png" sizes="72x72" href="./icon-72.png">
     <link rel="icon" type="image/png" sizes="96x96" href="./icon-96.png">
     <link rel="icon" type="image/png" sizes="144x144" href="./icon-144.png">
     <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
     <link rel="apple-touch-icon" href="./icon-192.png">
+    
+    <!-- Mobile optimizations -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="S-Lists">
 </head>
 <body>
     <div id="root" class="min-h-screen bg-gray-50">
@@ -100,25 +110,40 @@
 
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      // Регистрация Service Worker с правильным путем
+      // PWA Service Worker registration
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
           navigator.serviceWorker.register('./sw.js', {
             scope: './'
           }).then(function(registration) {
             console.log('ServiceWorker registration successful with scope: ', registration.scope);
+            
+            // Check for updates
+            registration.addEventListener('updatefound', () => {
+              console.log('New service worker found');
+            });
           }, function(err) {
             console.log('ServiceWorker registration failed: ', err);
           });
         });
       }
 
-      // Обработка события beforeinstallprompt для PWA
+      // PWA Install prompt
       let deferredPrompt;
       window.addEventListener('beforeinstallprompt', (e) => {
         console.log('beforeinstallprompt fired');
         e.preventDefault();
         deferredPrompt = e;
+        
+        // Show custom install button if needed
+        // For now just log that PWA is installable
+        console.log('PWA is installable');
+      });
+
+      // Track PWA installation
+      window.addEventListener('appinstalled', (e) => {
+        console.log('PWA was installed');
+        deferredPrompt = null;
       });
     </script>
 </body>
