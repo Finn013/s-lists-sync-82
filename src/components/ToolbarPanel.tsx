@@ -8,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { HelpCircle } from 'lucide-react';
 import TagSearch from './TagSearch';
 import ExportImportPanel from './ExportImportPanel';
+import PasswordChangeDialog from './PasswordChangeDialog';
 
 interface ListItem {
   id: string;
@@ -416,7 +417,10 @@ const ToolbarPanel: React.FC<ToolbarPanelProps> = ({
             <>
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">Управление данными:</span>
-                <ExportImportPanel tabs={tabs} onImport={onImportTabs} />
+                <div className="flex gap-2">
+                  <ExportImportPanel tabs={tabs} onImport={onImportTabs} />
+                  <PasswordChangeDialog />
+                </div>
               </div>
               <Separator />
             </>
