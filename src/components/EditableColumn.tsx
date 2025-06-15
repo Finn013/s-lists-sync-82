@@ -87,18 +87,28 @@ const EditableColumn: React.FC<EditableColumnProps> = ({
     const input = inputRef.current;
     const cursorPosition = input?.selectionStart || 0;
     
+    console.log(`Applying ${format} formatting. Current style:`, style);
+    
     const newStyle = { ...style };
     
     if (format === 'bold') {
-      newStyle.bold = !style.bold;
+      const newBoldValue = !style.bold;
+      newStyle.bold = newBoldValue;
+      console.log(`Bold toggled from ${style.bold} to ${newBoldValue}`);
     } else if (format === 'italic') {
-      newStyle.italic = !style.italic;
+      const newItalicValue = !style.italic;
+      newStyle.italic = newItalicValue;
+      console.log(`Italic toggled from ${style.italic} to ${newItalicValue}`);
     } else if (format === 'strikethrough') {
-      newStyle.strikethrough = !style.strikethrough;
+      const newStrikethroughValue = !style.strikethrough;
+      newStyle.strikethrough = newStrikethroughValue;
+      console.log(`Strikethrough toggled from ${style.strikethrough} to ${newStrikethroughValue}`);
     } else if (format === 'textColor') {
       newStyle.textColor = colorValue;
+      console.log(`Text color changed to ${colorValue}`);
     }
     
+    console.log('New style:', newStyle);
     onChange(value, newStyle);
     
     // Восстановить фокус и позицию курсора
