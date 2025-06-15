@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import ToolbarPanel from './ToolbarPanel';
 import SeparatorDropdown from './SeparatorDropdown';
 import ArchiveRecord from './ArchiveRecord';
@@ -44,6 +44,7 @@ interface ListItem {
   columnStyles?: ColumnStyle[];
   columnWidths?: number[];
   originalRowNumber?: number;
+  collapsed?: boolean;
 }
 
 interface ArchiveEntry {
@@ -60,6 +61,7 @@ interface TabData {
   items: ListItem[];
   notes?: string;
   archive?: ArchiveEntry[];
+  globalColumnWidths?: number[];
 }
 
 const ListManager: React.FC = () => {
@@ -76,6 +78,8 @@ const ListManager: React.FC = () => {
   const [clearArchiveDialogOpen, setClearArchiveDialogOpen] = useState(false);
   const [issueDialogOpen, setIssueDialogOpen] = useState(false);
   const [issuedTo, setIssuedTo] = useState('');
+  const [focusedColumnIndex, setFocusedColumnIndex] = useState<number>();
+  const [focusedItemId, setFocusedItemId] = useState<string>();
 
   useEffect(() => {
     initializeTabs();
@@ -86,22 +90,24 @@ const ListManager: React.FC = () => {
       const savedTabs = await dataManager.getTabs();
       if (savedTabs.length === 0) {
         const defaultTabs: TabData[] = [
-          { id: '1', title: 'Основной список', items: [], notes: '', archive: [] },
-          { id: '2', title: 'Выданные', items: [], notes: '', archive: [] },
-          { id: '3', title: 'Заметки', items: [], notes: '', archive: [] },
-          { id: '4', title: 'Архив', items: [], notes: '', archive: [] }
+          { id: '1', title: 'Основной список', items: [], notes: '', archive: [], globalColumnWidths: [200, 200, 200, 200] },
+          { id: '2', title: 'Выданные', items: [], notes: '', archive: [], globalColumnWidths: [200, 200, 200, 200] },
+          { id: '3', title: 'Заметки', items: [], notes: '', archive: [], globalColumnWidths: [200, 200, 200, 200] },
+          { id: '4', title: 'Архив', items: [], notes: '', archive: [], globalColumnWidths: [200, 200, 200, 200] }
         ];
         setTabs(defaultTabs);
         setActiveTab('1');
         await dataManager.saveTabs(defaultTabs);
       } else {
-        // Ensure correct tab order and titles
         const orderedTabs = [
           { ...savedTabs.find(t => t.id === '1') || { id: '1', items: [], notes: '', archive: [] }, title: 'Основной список' },
           { ...savedTabs.find(t => t.id === '2') || { id: '2', items: [], notes: '', archive: [] }, title: 'Выданные' },
           { ...savedTabs.find(t => t.id === '3') || { id: '3', items: [], notes: '', archive: [] }, title: 'Заметки' },
           { ...savedTabs.find(t => t.id === '4') || { id: '4', items: [], notes: '', archive: [] }, title: 'Архив' }
-        ];
+        ].map(tab => ({
+          ...tab,
+          globalColumnWidths: tab.globalColumnWidths || [200, 200, 200, 200]
+        }));
         setTabs(orderedTabs);
         setActiveTab('1');
       }
@@ -110,19 +116,25 @@ const ListManager: React.FC = () => {
     }
   };
 
-  const saveTabs = async () => {
+  const saveTabs = useCallback(async () => {
     try {
       await dataManager.saveTabs(tabs);
     } catch (error) {
       console.error('Error saving tabs:', error);
     }
-  };
+  }, [tabs, dataManager]);
+
+  useEffect(() => {
+    if (tabs.length > 0) {
+      saveTabs();
+    }
+  }, [tabs, saveTabs]);
 
   const addListItem = (tabId: string, text: string = '') => {
     const newItem: ListItem = {
       id: Date.now().toString(),
       text,
-      columns: ['', '', '', '', ''],
+      columns: ['', '', '', ''],
       checked: false,
       issued: false,
       type: 'item',
@@ -133,11 +145,9 @@ const ListManager: React.FC = () => {
       textColor: '#000000'
     };
     
-    const updatedTabs = tabs.map(tab =>
+    setTabs(prev => prev.map(tab =>
       tab.id === tabId ? { ...tab, items: [...tab.items, newItem] } : tab
-    );
-    setTabs(updatedTabs);
-    saveTabs();
+    ));
   };
 
   const addSeparator = (tabId: string) => {
@@ -150,53 +160,45 @@ const ListManager: React.FC = () => {
       type: 'separator',
       separatorText: 'Новый разделитель',
       separatorColor: '#e5e7eb',
-      separatorAlign: 'left'
+      separatorAlign: 'left',
+      collapsed: false
     };
     
-    const updatedTabs = tabs.map(tab =>
+    setTabs(prev => prev.map(tab =>
       tab.id === tabId ? { ...tab, items: [...tab.items, newSeparator] } : tab
-    );
-    setTabs(updatedTabs);
-    saveTabs();
+    ));
   };
 
   const updateItem = (tabId: string, itemId: string, updates: Partial<ListItem>) => {
-    const updatedTabs = tabs.map(tab =>
+    setTabs(prev => prev.map(tab =>
       tab.id === tabId ? {
         ...tab,
         items: tab.items.map(item =>
           item.id === itemId ? { ...item, ...updates } : item
         )
       } : tab
-    );
-    setTabs(updatedTabs);
-    saveTabs();
+    ));
   };
 
   const deleteSelected = (tabId: string) => {
-    const updatedTabs = tabs.map(tab =>
+    setTabs(prev => prev.map(tab =>
       tab.id === tabId ? {
         ...tab,
         items: tab.items.filter(item => !item.checked)
       } : tab
-    );
-    setTabs(updatedTabs);
-    saveTabs();
+    ));
   };
 
   const moveItem = (tabId: string, fromIndex: number, toIndex: number) => {
-    const tab = tabs.find(t => t.id === tabId);
-    if (!tab) return;
-
-    const newItems = [...tab.items];
-    const [moved] = newItems.splice(fromIndex, 1);
-    newItems.splice(toIndex, 0, moved);
-
-    const updatedTabs = tabs.map(t =>
-      t.id === tabId ? { ...t, items: newItems } : t
-    );
-    setTabs(updatedTabs);
-    saveTabs();
+    setTabs(prev => prev.map(tab => {
+      if (tab.id !== tabId) return tab;
+      
+      const newItems = [...tab.items];
+      const [moved] = newItems.splice(fromIndex, 1);
+      newItems.splice(toIndex, 0, moved);
+      
+      return { ...tab, items: newItems };
+    }));
   };
 
   const issueItems = (tabId: string, issuedTo: string) => {
@@ -206,7 +208,6 @@ const ListManager: React.FC = () => {
     const checkedItems = tab.items.filter(item => item.checked && item.type === 'item');
     const currentDate = new Date().toLocaleDateString('ru-RU');
 
-    // Get row numbers for checked items
     const itemsWithRowNumbers = checkedItems.map(checkedItem => {
       const itemIndex = tab.items.filter(i => i.type === 'item').indexOf(checkedItem);
       return {
@@ -215,7 +216,6 @@ const ListManager: React.FC = () => {
       };
     });
 
-    // Create archive entry
     const rowNumbers = itemsWithRowNumbers.map(item => item.originalRowNumber);
     const archiveEntry: ArchiveEntry = {
       id: Date.now().toString(),
@@ -224,46 +224,41 @@ const ListManager: React.FC = () => {
       issuedDate: currentDate
     };
 
-    // Update items in current tab
-    const updatedCurrentTab = {
-      ...tab,
-      items: tab.items.map(item =>
-        item.checked && item.type === 'item'
-          ? { ...item, issued: true, issuedTo, issuedDate: currentDate, checked: false }
-          : item
-      )
-    };
-
-    // Add items to "Выданные" tab with preserved row numbers
-    const issuedTab = tabs.find(t => t.title === 'Выданные');
-    const archiveTab = tabs.find(t => t.title === 'Архив');
-    
-    let updatedTabs = tabs.map(t => t.id === tabId ? updatedCurrentTab : t);
-
-    if (issuedTab) {
-      const issuedItems = itemsWithRowNumbers.map(item => ({
-        ...item,
-        id: Date.now().toString() + Math.random(),
-        issued: true,
-        issuedTo,
-        issuedDate: currentDate,
-        checked: false
-      }));
-
-      updatedTabs = updatedTabs.map(t =>
-        t.id === issuedTab.id ? { ...t, items: [...t.items, ...issuedItems] } : t
-      );
-    }
-
-    // Add to archive
-    if (archiveTab) {
-      updatedTabs = updatedTabs.map(t =>
-        t.id === archiveTab.id ? { ...t, archive: [...(t.archive || []), archiveEntry] } : t
-      );
-    }
-
-    setTabs(updatedTabs);
-    saveTabs();
+    setTabs(prev => {
+      const updatedTabs = prev.map(t => {
+        if (t.id === tabId) {
+          return {
+            ...t,
+            items: t.items.map(item =>
+              item.checked && item.type === 'item'
+                ? { ...item, issued: true, issuedTo, issuedDate: currentDate, checked: false }
+                : item
+            )
+          };
+        }
+        
+        if (t.title === 'Выданные') {
+          const issuedItems = itemsWithRowNumbers.map(item => ({
+            ...item,
+            id: Date.now().toString() + Math.random(),
+            issued: true,
+            issuedTo,
+            issuedDate: currentDate,
+            checked: false
+          }));
+          
+          return { ...t, items: [...t.items, ...issuedItems] };
+        }
+        
+        if (t.title === 'Архив') {
+          return { ...t, archive: [...(t.archive || []), archiveEntry] };
+        }
+        
+        return t;
+      };
+      
+      return updatedTabs;
+    });
   };
 
   const returnItems = (fromTabId: string, toTabId: string) => {
@@ -276,81 +271,70 @@ const ListManager: React.FC = () => {
     const checkedItems = fromTab.items.filter(item => item.checked);
     const currentDate = new Date().toLocaleDateString('ru-RU');
 
-    // Update archive with return date
-    if (archiveTab) {
-      const updatedArchive = archiveTab.archive?.map(entry => {
-        if (checkedItems.some(item => item.issuedTo === entry.issuedTo && item.issuedDate === entry.issuedDate)) {
-          return { ...entry, returnedDate: currentDate };
-        }
-        return entry;
-      }) || [];
-
-      const updatedTabs = tabs.map(t => {
-        if (t.id === fromTabId) {
-          return { ...t, items: t.items.filter(item => !item.checked) };
-        }
-        if (t.id === toTabId) {
-          // Find matching items by originalRowNumber and update only those
-          const returnedItems = checkedItems.filter(item => item.originalRowNumber);
-          
-          return {
-            ...t,
-            items: t.items.map(originalItem => {
-              const itemIndex = t.items.filter(i => i.type === 'item').indexOf(originalItem);
-              const currentRowNumber = itemIndex + 1;
-              
-              const returnedItem = returnedItems.find(ri => ri.originalRowNumber === currentRowNumber);
-              
-              if (returnedItem) {
-                return {
-                  ...originalItem,
-                  issued: false,
-                  returnedDate: currentDate,
-                  checked: false,
-                  issuedTo: undefined,
-                  issuedDate: undefined
-                };
-              }
-              return originalItem;
-            })
-          };
-        }
-        if (t.id === archiveTab.id) {
-          return { ...t, archive: updatedArchive };
-        }
-        return t;
-      });
-
-      setTabs(updatedTabs);
-      saveTabs();
-    }
+    setTabs(prev => prev.map(t => {
+      if (t.id === fromTabId) {
+        return { ...t, items: t.items.filter(item => !item.checked) };
+      }
+      
+      if (t.id === toTabId) {
+        return {
+          ...t,
+          items: t.items.map(originalItem => {
+            if (originalItem.type !== 'item') return originalItem;
+            
+            const itemIndex = t.items.filter(i => i.type === 'item').indexOf(originalItem);
+            const currentRowNumber = itemIndex + 1;
+            
+            const returnedItem = checkedItems.find(ri => ri.originalRowNumber === currentRowNumber);
+            
+            if (returnedItem && originalItem.issued) {
+              return {
+                ...originalItem,
+                issued: false,
+                returnedDate: currentDate,
+                checked: false,
+                issuedTo: undefined,
+                issuedDate: undefined
+              };
+            }
+            return originalItem;
+          })
+        };
+      }
+      
+      if (t.id === archiveTab?.id) {
+        const updatedArchive = t.archive?.map(entry => {
+          if (checkedItems.some(item => item.issuedTo === entry.issuedTo && item.issuedDate === entry.issuedDate)) {
+            return { ...entry, returnedDate: currentDate };
+          }
+          return entry;
+        }) || [];
+        
+        return { ...t, archive: updatedArchive };
+      }
+      
+      return t;
+    }));
   };
 
   const clearArchive = () => {
-    const archiveTab = tabs.find(t => t.id === '4');
-    if (archiveTab) {
-      const updatedTabs = tabs.map(t =>
-        t.id === '4' ? { ...t, archive: [] } : t
-      );
-      setTabs(updatedTabs);
-      saveTabs();
-    }
+    setTabs(prev => prev.map(t =>
+      t.id === '4' ? { ...t, archive: [] } : t
+    ));
     setClearArchiveDialogOpen(false);
   };
 
   const deleteItem = (tabId: string, itemId: string) => {
-    const updatedTabs = tabs.map(tab =>
+    setTabs(prev => prev.map(tab =>
       tab.id === tabId ? {
         ...tab,
         items: tab.items.filter(item => item.id !== itemId)
       } : tab
-    );
-    setTabs(updatedTabs);
-    saveTabs();
+    ));
   };
 
   const updateItemColumn = (tabId: string, itemId: string, columnIndex: number, value: string, style?: ColumnStyle) => {
-    const updatedTabs = tabs.map(tab =>
+    setTabs(prev => prev.map(tab =>
       tab.id === tabId ? {
         ...tab,
         items: tab.items.map(item => {
@@ -368,35 +352,44 @@ const ListManager: React.FC = () => {
           return item;
         })
       } : tab
-    );
-    setTabs(updatedTabs);
-    saveTabs();
+    ));
   };
 
-  const updateColumnWidth = (tabId: string, itemId: string, columnIndex: number, width: number) => {
-    const updatedTabs = tabs.map(tab =>
+  const updateGlobalColumnWidth = (tabId: string, columnIndex: number, width: number) => {
+    setTabs(prev => prev.map(tab =>
       tab.id === tabId ? {
         ...tab,
-        items: tab.items.map(item => {
-          if (item.id === itemId) {
-            const newColumnWidths = item.columnWidths ? [...item.columnWidths] : [200, 200, 200, 200, 200];
-            newColumnWidths[columnIndex] = width;
-            return { ...item, columnWidths: newColumnWidths };
-          }
-          return item;
-        })
+        globalColumnWidths: tab.globalColumnWidths?.map((w, i) => i === columnIndex ? width : w) || [200, 200, 200, 200]
       } : tab
-    );
-    setTabs(updatedTabs);
-    saveTabs();
+    ));
+  };
+
+  const updateColumnStyle = (columnIndex: number, style: ColumnStyle) => {
+    if (focusedItemId && activeTab) {
+      setTabs(prev => prev.map(tab =>
+        tab.id === activeTab ? {
+          ...tab,
+          items: tab.items.map(item => {
+            if (item.id === focusedItemId) {
+              const newColumnStyles = item.columnStyles ? [...item.columnStyles] : [];
+              newColumnStyles[columnIndex] = { ...newColumnStyles[columnIndex], ...style };
+              return { ...item, columnStyles: newColumnStyles };
+            }
+            return item;
+          })
+        } : tab
+      ));
+    }
+  };
+
+  const toggleSeparatorCollapse = (tabId: string, separatorId: string) => {
+    updateItem(tabId, separatorId, { collapsed: !tabs.find(t => t.id === tabId)?.items.find(i => i.id === separatorId)?.collapsed });
   };
 
   const handleTabRename = () => {
-    const updatedTabs = tabs.map(tab =>
+    setTabs(prev => prev.map(tab =>
       tab.id === renamingTabId ? { ...tab, title: newTabTitle } : tab
-    );
-    setTabs(updatedTabs);
-    saveTabs();
+    ));
     setRenameDialogOpen(false);
     setRenamingTabId('');
     setNewTabTitle('');
@@ -421,7 +414,6 @@ const ListManager: React.FC = () => {
   const filteredItems = (items: ListItem[]) => {
     if (!searchTerm) return items;
     
-    // Поддержка поиска по тегам
     if (searchTerm.includes('#')) {
       const tag = searchTerm.toLowerCase();
       return items.filter(item => {
@@ -468,6 +460,29 @@ const ListManager: React.FC = () => {
     return style;
   };
 
+  const renderVisibleItems = (items: ListItem[]) => {
+    const result: ListItem[] = [];
+    let currentSeparator: ListItem | null = null;
+    
+    for (const item of items) {
+      if (item.type === 'separator') {
+        result.push(item);
+        currentSeparator = item;
+      } else {
+        if (!currentSeparator || !currentSeparator.collapsed) {
+          result.push(item);
+        }
+      }
+    }
+    
+    return result;
+  };
+
+  const handleColumnFocus = (itemId: string, columnIndex: number) => {
+    setFocusedItemId(itemId);
+    setFocusedColumnIndex(columnIndex);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto p-4">
@@ -503,9 +518,7 @@ const ListManager: React.FC = () => {
 
           {tabs.map(tab => (
             <TabsContent key={tab.id} value={tab.id} className="space-y-4">
-              {/* Control buttons */}
               <div className="flex items-center justify-between">
-                {/* Show toolbar toggle only for main list and notes tabs */}
                 {(tab.id === '1' || tab.id === '3') && (
                   <Button
                     variant="outline"
@@ -516,7 +529,6 @@ const ListManager: React.FC = () => {
                   </Button>
                 )}
                 
-                {/* Archive clear button */}
                 {tab.id === '4' && (
                   <Button
                     variant="destructive"
@@ -526,7 +538,6 @@ const ListManager: React.FC = () => {
                   </Button>
                 )}
                 
-                {/* Action buttons for main list and issued tabs */}
                 {(tab.id === '1' || tab.id === '2') && (
                   <div className="flex space-x-2">
                     {tab.id === '1' && (
@@ -561,7 +572,6 @@ const ListManager: React.FC = () => {
                 )}
               </div>
 
-              {/* Toolbar Panel - only for main list and notes */}
               {(tab.id === '1' || tab.id === '3') && toolbarOpen[tab.id] && (
                 <ToolbarPanel
                   tabId={tab.id}
@@ -573,10 +583,11 @@ const ListManager: React.FC = () => {
                   selectedItems={tab.items.filter(item => item.checked)}
                   onUpdateItem={updateItem}
                   items={tab.items}
+                  focusedColumnIndex={focusedColumnIndex}
+                  onUpdateColumnStyle={updateColumnStyle}
                 />
               )}
 
-              {/* Content */}
               {tab.id === '3' ? (
                 <Card>
                   <CardContent className="p-4">
@@ -585,11 +596,9 @@ const ListManager: React.FC = () => {
                       placeholder="Введите ваши заметки здесь..."
                       value={tab.notes || ''}
                       onChange={(e) => {
-                        const updatedTabs = tabs.map(t =>
+                        setTabs(prev => prev.map(t =>
                           t.id === tab.id ? { ...t, notes: e.target.value } : t
-                        );
-                        setTabs(updatedTabs);
-                        saveTabs();
+                        ));
                       }}
                     />
                   </CardContent>
@@ -600,7 +609,7 @@ const ListManager: React.FC = () => {
                 <Card>
                   <CardContent className="p-4">
                     <div className="space-y-2">
-                      {filteredItems(tab.items).map((item, index) => (
+                      {renderVisibleItems(filteredItems(tab.items)).map((item, index) => (
                         <div
                           key={item.id}
                           draggable
@@ -617,6 +626,14 @@ const ListManager: React.FC = () => {
                                 borderLeftColor: item.separatorColor || '#6b7280'
                               }}
                             >
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toggleSeparatorCollapse(tab.id, item.id)}
+                                className="p-0 h-auto"
+                              >
+                                {item.collapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+                              </Button>
                               <div 
                                 className="flex-1 font-medium"
                                 style={{ textAlign: item.separatorAlign || 'left' }}
@@ -652,9 +669,10 @@ const ListManager: React.FC = () => {
                                     onChange={(value, style) => updateItemColumn(tab.id, item.id, colIndex, value, style)}
                                     style={item.columnStyles?.[colIndex]}
                                     disabled={item.issued}
-                                    width={item.columnWidths?.[colIndex] || 200}
-                                    onWidthChange={(width) => updateColumnWidth(tab.id, item.id, colIndex, width)}
-                                    showFormatButton={false}
+                                    width={tab.globalColumnWidths?.[colIndex] || 200}
+                                    onWidthChange={(width) => updateGlobalColumnWidth(tab.id, colIndex, width)}
+                                    columnIndex={colIndex}
+                                    onFocus={() => handleColumnFocus(item.id, colIndex)}
                                   />
                                 ))}
                               </div>
@@ -677,7 +695,6 @@ const ListManager: React.FC = () => {
           ))}
         </Tabs>
 
-        {/* Rename Tab Dialog */}
         <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
           <DialogContent>
             <DialogHeader>
@@ -699,7 +716,6 @@ const ListManager: React.FC = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Clear Archive Dialog */}
         <Dialog open={clearArchiveDialogOpen} onOpenChange={setClearArchiveDialogOpen}>
           <DialogContent>
             <DialogHeader>
@@ -717,7 +733,6 @@ const ListManager: React.FC = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Issue Items Dialog */}
         <Dialog open={issueDialogOpen} onOpenChange={setIssueDialogOpen}>
           <DialogContent>
             <DialogHeader>

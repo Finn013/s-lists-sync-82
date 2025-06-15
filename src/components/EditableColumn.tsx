@@ -19,6 +19,8 @@ interface EditableColumnProps {
   width?: number;
   onWidthChange?: (width: number) => void;
   showFormatButton?: boolean;
+  onFocus?: () => void;
+  columnIndex?: number;
 }
 
 const EditableColumn: React.FC<EditableColumnProps> = ({
@@ -28,9 +30,12 @@ const EditableColumn: React.FC<EditableColumnProps> = ({
   disabled = false,
   width = 200,
   onWidthChange,
-  showFormatButton = false
+  showFormatButton = false,
+  onFocus,
+  columnIndex
 }) => {
   const [isResizing, setIsResizing] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const getInputStyle = (): React.CSSProperties => {
@@ -66,6 +71,17 @@ const EditableColumn: React.FC<EditableColumnProps> = ({
     }
   };
 
+  const handleFocus = () => {
+    setIsFocused(true);
+    if (onFocus) {
+      onFocus();
+    }
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+  };
+
   return (
     <div className="relative flex items-center">
       <input
@@ -73,9 +89,12 @@ const EditableColumn: React.FC<EditableColumnProps> = ({
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value, style)}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         className={`p-1 border rounded text-sm ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
         disabled={disabled}
         style={getInputStyle()}
+        data-column-index={columnIndex}
       />
       
       {onWidthChange && (

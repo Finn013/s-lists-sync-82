@@ -36,6 +36,8 @@ interface ToolbarPanelProps {
   selectedItems: ListItem[];
   onUpdateItem: (tabId: string, itemId: string, updates: Partial<ListItem>) => void;
   items: ListItem[];
+  focusedColumnIndex?: number;
+  onUpdateColumnStyle?: (columnIndex: number, style: any) => void;
 }
 
 const ToolbarPanel: React.FC<ToolbarPanelProps> = ({
@@ -47,31 +49,53 @@ const ToolbarPanel: React.FC<ToolbarPanelProps> = ({
   onSearchChange,
   selectedItems,
   onUpdateItem,
-  items
+  items,
+  focusedColumnIndex,
+  onUpdateColumnStyle
 }) => {
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
 
   const applyFormatting = (format: keyof ListItem, value?: any) => {
-    selectedItems.forEach(item => {
-      if (item.type === 'item') {
-        const updates: Partial<ListItem> = {};
-        
-        if (format === 'bold') {
-          updates.bold = !item.bold;
-        } else if (format === 'italic') {
-          updates.italic = !item.italic;
-        } else if (format === 'strikethrough') {
-          updates.strikethrough = !item.strikethrough;
-        } else if (format === 'fontSize') {
-          const currentSize = item.fontSize || 14;
-          updates.fontSize = value === 'increase' ? currentSize + 2 : currentSize - 2;
-        } else if (format === 'textColor') {
-          updates.textColor = value;
-        }
-        
-        onUpdateItem(tabId, item.id, updates);
+    if (focusedColumnIndex !== undefined && onUpdateColumnStyle) {
+      // Apply formatting to focused column
+      const updates: any = {};
+      
+      if (format === 'bold') {
+        updates.bold = true;
+      } else if (format === 'italic') {
+        updates.italic = true;
+      } else if (format === 'strikethrough') {
+        updates.strikethrough = true;
+      } else if (format === 'fontSize') {
+        updates.fontSize = value === 'increase' ? 16 : 12;
+      } else if (format === 'textColor') {
+        updates.textColor = value;
       }
-    });
+      
+      onUpdateColumnStyle(focusedColumnIndex, updates);
+    } else {
+      // Apply to selected items (existing logic)
+      selectedItems.forEach(item => {
+        if (item.type === 'item') {
+          const updates: Partial<ListItem> = {};
+          
+          if (format === 'bold') {
+            updates.bold = !item.bold;
+          } else if (format === 'italic') {
+            updates.italic = !item.italic;
+          } else if (format === 'strikethrough') {
+            updates.strikethrough = !item.strikethrough;
+          } else if (format === 'fontSize') {
+            const currentSize = item.fontSize || 14;
+            updates.fontSize = value === 'increase' ? currentSize + 2 : currentSize - 2;
+          } else if (format === 'textColor') {
+            updates.textColor = value;
+          }
+          
+          onUpdateItem(tabId, item.id, updates);
+        }
+      });
+    }
   };
 
   const applyNotesFormatting = (format: string, value?: any) => {
@@ -81,7 +105,7 @@ const ToolbarPanel: React.FC<ToolbarPanelProps> = ({
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     
-    if (start === end) return; // No text selected
+    if (start === end) return;
     
     const selectedText = textarea.value.substring(start, end);
     let formattedText = selectedText;
@@ -109,12 +133,12 @@ const ToolbarPanel: React.FC<ToolbarPanelProps> = ({
   ];
 
   const isNotesTab = tabId === '3';
+  const hasFormatTarget = focusedColumnIndex !== undefined || selectedItems.length > 0;
 
   return (
     <Card className="bg-blue-50 border-blue-200">
       <CardContent className="p-4">
         <div className="space-y-4">
-          {/* First Row - Basic Actions */}
           {!isNotesTab && (
             <div className="flex flex-wrap gap-2">
               <Button
@@ -143,13 +167,12 @@ const ToolbarPanel: React.FC<ToolbarPanelProps> = ({
 
           {!isNotesTab && <Separator />}
 
-          {/* Text Formatting */}
           <div className="flex flex-wrap gap-2">
             <Button 
               size="sm" 
               variant="outline"
               onClick={() => isNotesTab ? applyNotesFormatting('bold') : applyFormatting('bold')}
-              disabled={!isNotesTab && selectedItems.length === 0}
+              disabled={!isNotesTab && !hasFormatTarget}
             >
               <span className="text-lg font-bold">Ж</span>
             </Button>
@@ -157,7 +180,7 @@ const ToolbarPanel: React.FC<ToolbarPanelProps> = ({
               size="sm" 
               variant="outline"
               onClick={() => isNotesTab ? applyNotesFormatting('italic') : applyFormatting('italic')}
-              disabled={!isNotesTab && selectedItems.length === 0}
+              disabled={!isNotesTab && !hasFormatTarget}
             >
               <span className="italic">К</span>
             </Button>
@@ -165,7 +188,7 @@ const ToolbarPanel: React.FC<ToolbarPanelProps> = ({
               size="sm" 
               variant="outline"
               onClick={() => isNotesTab ? applyNotesFormatting('strikethrough') : applyFormatting('strikethrough')}
-              disabled={!isNotesTab && selectedItems.length === 0}
+              disabled={!isNotesTab && !hasFormatTarget}
             >
               <span className="line-through">З</span>
             </Button>
@@ -175,7 +198,7 @@ const ToolbarPanel: React.FC<ToolbarPanelProps> = ({
                   size="sm" 
                   variant="outline"
                   onClick={() => applyFormatting('fontSize', 'increase')}
-                  disabled={selectedItems.length === 0}
+                  disabled={!hasFormatTarget}
                 >
                   А+
                 </Button>
@@ -183,7 +206,7 @@ const ToolbarPanel: React.FC<ToolbarPanelProps> = ({
                   size="sm" 
                   variant="outline"
                   onClick={() => applyFormatting('fontSize', 'decrease')}
-                  disabled={selectedItems.length === 0}
+                  disabled={!hasFormatTarget}
                 >
                   А-
                 </Button>
@@ -192,7 +215,7 @@ const ToolbarPanel: React.FC<ToolbarPanelProps> = ({
                     <Button 
                       size="sm" 
                       variant="outline"
-                      disabled={selectedItems.length === 0}
+                      disabled={!hasFormatTarget}
                     >
                       🎨
                     </Button>
@@ -219,7 +242,6 @@ const ToolbarPanel: React.FC<ToolbarPanelProps> = ({
 
           <Separator />
 
-          {/* Search with Tags - only for main list tab */}
           {!isNotesTab && (
             <>
               <TagSearch 
