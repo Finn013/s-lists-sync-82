@@ -17,6 +17,7 @@ const PasswordManager: React.FC<PasswordManagerProps> = ({ onAuthenticated }) =>
   const [confirmPassword, setConfirmPassword] = useState('');
   const [dataManager] = useState(() => new DataManager());
   const [cryptoManager] = useState(() => new CryptoManager());
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     checkFirstTime();
@@ -24,11 +25,16 @@ const PasswordManager: React.FC<PasswordManagerProps> = ({ onAuthenticated }) =>
 
   const checkFirstTime = async () => {
     try {
+      console.log('Checking if password exists...');
+      await dataManager.init();
       const hasPassword = await dataManager.hasPassword();
+      console.log('Has password:', hasPassword);
       setIsFirstTime(!hasPassword);
     } catch (error) {
       console.error('Error checking password:', error);
       setIsFirstTime(true);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -47,26 +53,47 @@ const PasswordManager: React.FC<PasswordManagerProps> = ({ onAuthenticated }) =>
       }
 
       try {
+        console.log('Creating new password...');
         await cryptoManager.setPassword(password);
         await dataManager.setPassword(password);
+        console.log('Password created successfully');
         onAuthenticated();
       } catch (error) {
+        console.error('Error creating password:', error);
         setError('Ошибка при создании пароля');
       }
     } else {
       try {
+        console.log('Verifying password...');
         const isValid = await dataManager.verifyPassword(password);
         if (isValid) {
           await cryptoManager.setPassword(password);
+          console.log('Password verified successfully');
           onAuthenticated();
         } else {
           setError('Неверный пароль');
         }
       } catch (error) {
+        console.error('Error verifying password:', error);
         setError('Ошибка при проверке пароля');
       }
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="flex items-center justify-center p-8">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600 mb-4">S-</div>
+              <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
@@ -74,7 +101,7 @@ const PasswordManager: React.FC<PasswordManagerProps> = ({ onAuthenticated }) =>
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold text-blue-600">S-</CardTitle>
           <p className="text-gray-600">
-            {isFirstTime ? 'Создайте пароль для защиты приложения' : 'Введите пароль для входа'}
+            {isFirstTime ? 'Добро пожаловать! Создайте пароль для защиты приложения' : 'Введите пароль для входа'}
           </p>
         </CardHeader>
         <CardContent>
@@ -82,7 +109,7 @@ const PasswordManager: React.FC<PasswordManagerProps> = ({ onAuthenticated }) =>
             <div>
               <Input
                 type="password"
-                placeholder="Пароль"
+                placeholder={isFirstTime ? "Придумайте пароль" : "Пароль"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -112,6 +139,13 @@ const PasswordManager: React.FC<PasswordManagerProps> = ({ onAuthenticated }) =>
               {isFirstTime ? 'Создать пароль' : 'Войти'}
             </Button>
           </form>
+          
+          {isFirstTime && (
+            <div className="mt-4 text-xs text-gray-500 text-center">
+              Пароль будет использоваться для защиты ваших данных.<br />
+              Минимум 4 символа.
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
