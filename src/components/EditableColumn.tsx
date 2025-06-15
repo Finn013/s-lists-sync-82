@@ -40,6 +40,10 @@ const EditableColumn: React.FC<EditableColumnProps> = ({
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  console.log('EditableColumn render - style:', style);
+  console.log('EditableColumn render - showFormatButton:', showFormatButton);
+  console.log('EditableColumn render - isFocused:', isFocused);
+
   const getInputStyle = (): React.CSSProperties => {
     return {
       fontWeight: style.bold ? 'bold' : 'normal',
@@ -74,6 +78,7 @@ const EditableColumn: React.FC<EditableColumnProps> = ({
   };
 
   const handleFocus = () => {
+    console.log('Input focused');
     setIsFocused(true);
     if (onFocus) {
       onFocus();
@@ -81,6 +86,7 @@ const EditableColumn: React.FC<EditableColumnProps> = ({
   };
 
   const handleBlur = () => {
+    console.log('Input blurred');
     setIsFocused(false);
   };
 
@@ -109,7 +115,7 @@ const EditableColumn: React.FC<EditableColumnProps> = ({
       console.log(`Text color changed to ${colorValue}`);
     }
     
-    console.log('New style:', newStyle);
+    console.log('New style being sent:', newStyle);
     onChange(value, newStyle);
     
     // Восстановить фокус и позицию курсора
@@ -145,24 +151,33 @@ const EditableColumn: React.FC<EditableColumnProps> = ({
         <div className="absolute top-full left-0 z-10 bg-white border rounded shadow-md p-1 flex gap-1 mt-1">
           <Toggle
             size="sm"
-            pressed={style.bold}
-            onPressedChange={() => applyFormatting('bold')}
+            pressed={!!style.bold}
+            onPressedChange={() => {
+              console.log('Bold button clicked, current bold state:', style.bold);
+              applyFormatting('bold');
+            }}
             className="text-xs px-2 py-1 h-6 data-[state=on]:bg-blue-600 data-[state=on]:text-white"
           >
             <span className="font-bold">Ж</span>
           </Toggle>
           <Toggle
             size="sm"
-            pressed={style.italic}
-            onPressedChange={() => applyFormatting('italic')}
+            pressed={!!style.italic}
+            onPressedChange={() => {
+              console.log('Italic button clicked, current italic state:', style.italic);
+              applyFormatting('italic');
+            }}
             className="text-xs px-2 py-1 h-6 data-[state=on]:bg-blue-600 data-[state=on]:text-white"
           >
             <span className="italic">К</span>
           </Toggle>
           <Toggle
             size="sm"
-            pressed={style.strikethrough}
-            onPressedChange={() => applyFormatting('strikethrough')}
+            pressed={!!style.strikethrough}
+            onPressedChange={() => {
+              console.log('Strikethrough button clicked, current strikethrough state:', style.strikethrough);
+              applyFormatting('strikethrough');
+            }}
             className="text-xs px-2 py-1 h-6 data-[state=on]:bg-blue-600 data-[state=on]:text-white"
           >
             <span className="line-through">З</span>
