@@ -1,11 +1,16 @@
 
-const CACHE_NAME = 's-list-app-v2';
+const CACHE_NAME = 's-list-app-v3';
+const BASE_PATH = '/s-lists-sync';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png'
+  `${BASE_PATH}/`,
+  `${BASE_PATH}/index.html`,
+  `${BASE_PATH}/manifest.json`,
+  `${BASE_PATH}/icon-48.png`,
+  `${BASE_PATH}/icon-72.png`,
+  `${BASE_PATH}/icon-96.png`,
+  `${BASE_PATH}/icon-144.png`,
+  `${BASE_PATH}/icon-192.png`,
+  `${BASE_PATH}/icon-512.png`
 ];
 
 // Install service worker
@@ -51,6 +56,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Проверяем, что запрос относится к нашему домену
+  if (!event.request.url.includes(location.origin)) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
@@ -74,6 +84,11 @@ self.addEventListener('fetch', (event) => {
             });
 
           return response;
+        }).catch(() => {
+          // В случае ошибки сети, возвращаем offline страницу для навигации
+          if (event.request.mode === 'navigate') {
+            return caches.match(`${BASE_PATH}/`);
+          }
         });
       })
   );
