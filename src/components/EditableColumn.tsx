@@ -84,9 +84,14 @@ const EditableColumn: React.FC<EditableColumnProps> = ({
     }
   };
 
-  const handleBlur = () => {
+  const handleBlur = (e: React.FocusEvent) => {
     console.log('Input blurred');
-    setIsFocused(false);
+    // Проверяем, не переходит ли фокус на кнопки форматирования
+    const relatedTarget = e.relatedTarget as HTMLElement;
+    if (!relatedTarget || !relatedTarget.closest('.formatting-toolbar')) {
+      setIsFocused(false);
+      setColorPickerOpen(false);
+    }
   };
 
   const applyFormatting = (format: keyof ColumnStyle, colorValue?: string) => {
@@ -141,13 +146,15 @@ const EditableColumn: React.FC<EditableColumnProps> = ({
         data-column-index={columnIndex}
       />
       
-      {showFormatButton && isFocused && (
-        <FormattingToolbar
-          style={style}
-          onFormatChange={applyFormatting}
-          colorPickerOpen={colorPickerOpen}
-          onColorPickerOpenChange={setColorPickerOpen}
-        />
+      {isFocused && (
+        <div className="formatting-toolbar">
+          <FormattingToolbar
+            style={style}
+            onFormatChange={applyFormatting}
+            colorPickerOpen={colorPickerOpen}
+            onColorPickerOpenChange={setColorPickerOpen}
+          />
+        </div>
       )}
       
       {onWidthChange && (
