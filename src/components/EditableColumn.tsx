@@ -90,11 +90,11 @@ const EditableColumn: React.FC<EditableColumnProps> = ({
     const newStyle = { ...style };
     
     if (format === 'bold') {
-      newStyle.bold = !newStyle.bold;
+      newStyle.bold = !style.bold; // Используем текущее состояние из props
     } else if (format === 'italic') {
-      newStyle.italic = !newStyle.italic;
+      newStyle.italic = !style.italic; // Используем текущее состояние из props
     } else if (format === 'strikethrough') {
-      newStyle.strikethrough = !newStyle.strikethrough;
+      newStyle.strikethrough = !style.strikethrough; // Используем текущее состояние из props
     } else if (format === 'textColor') {
       newStyle.textColor = colorValue;
     }
