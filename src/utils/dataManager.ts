@@ -44,7 +44,12 @@ export class DataManager {
     
     // Simple hash for password storage (in production, use proper hashing)
     const hashedPassword = await this.hashPassword(password);
-    await store.put({ key: 'password', value: hashedPassword });
+    
+    return new Promise((resolve, reject) => {
+      const request = store.put({ key: 'password', value: hashedPassword });
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
   }
 
   async hasPassword(): Promise<boolean> {
@@ -52,8 +57,12 @@ export class DataManager {
       const db = await this.ensureDB();
       const transaction = db.transaction(['settings'], 'readonly');
       const store = transaction.objectStore('settings');
-      const result = await store.get('password');
-      return !!result;
+      
+      return new Promise((resolve) => {
+        const request = store.get('password');
+        request.onsuccess = () => resolve(!!request.result);
+        request.onerror = () => resolve(false);
+      });
     } catch {
       return false;
     }
@@ -64,12 +73,20 @@ export class DataManager {
       const db = await this.ensureDB();
       const transaction = db.transaction(['settings'], 'readonly');
       const store = transaction.objectStore('settings');
-      const result = await store.get('password');
       
-      if (!result) return false;
-      
-      const hashedInput = await this.hashPassword(password);
-      return hashedInput === result.value;
+      return new Promise(async (resolve) => {
+        const request = store.get('password');
+        request.onsuccess = async () => {
+          if (!request.result) {
+            resolve(false);
+            return;
+          }
+          
+          const hashedInput = await this.hashPassword(password);
+          resolve(hashedInput === request.result.value);
+        };
+        request.onerror = () => resolve(false);
+      });
     } catch {
       return false;
     }
@@ -88,13 +105,32 @@ export class DataManager {
     const transaction = db.transaction(['tabs'], 'readwrite');
     const store = transaction.objectStore('tabs');
     
-    // Clear existing tabs
-    await store.clear();
-    
-    // Save all tabs
-    for (const tab of tabs) {
-      await store.put(tab);
-    }
+    return new Promise((resolve, reject) => {
+      // Clear existing tabs
+      const clearRequest = store.clear();
+      clearRequest.onsuccess = () => {
+        // Save all tabs
+        let completed = 0;
+        const total = tabs.length;
+        
+        if (total === 0) {
+          resolve();
+          return;
+        }
+        
+        for (const tab of tabs) {
+          const putRequest = store.put(tab);
+          putRequest.onsuccess = () => {
+            completed++;
+            if (completed === total) {
+              resolve();
+            }
+          };
+          putRequest.onerror = () => reject(putRequest.error);
+        }
+      };
+      clearRequest.onerror = () => reject(clearRequest.error);
+    });
   }
 
   async getTabs(): Promise<any[]> {
@@ -102,9 +138,9 @@ export class DataManager {
       const db = await this.ensureDB();
       const transaction = db.transaction(['tabs'], 'readonly');
       const store = transaction.objectStore('tabs');
-      const request = store.getAll();
       
       return new Promise((resolve, reject) => {
+        const request = store.getAll();
         request.onsuccess = () => resolve(request.result || []);
         request.onerror = () => reject(request.error);
       });
