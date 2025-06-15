@@ -146,7 +146,7 @@ const EditableColumn: React.FC<EditableColumnProps> = ({
             size="sm"
             variant={style.bold ? "default" : "outline"}
             onClick={() => applyFormatting('bold')}
-            className="text-xs px-2 py-1 h-6"
+            className={`text-xs px-2 py-1 h-6 ${style.bold ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`}
           >
             <span className="font-bold">Ж</span>
           </Button>
@@ -154,7 +154,7 @@ const EditableColumn: React.FC<EditableColumnProps> = ({
             size="sm"
             variant={style.italic ? "default" : "outline"}
             onClick={() => applyFormatting('italic')}
-            className="text-xs px-2 py-1 h-6"
+            className={`text-xs px-2 py-1 h-6 ${style.italic ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`}
           >
             <span className="italic">К</span>
           </Button>
@@ -162,7 +162,7 @@ const EditableColumn: React.FC<EditableColumnProps> = ({
             size="sm"
             variant={style.strikethrough ? "default" : "outline"}
             onClick={() => applyFormatting('strikethrough')}
-            className="text-xs px-2 py-1 h-6"
+            className={`text-xs px-2 py-1 h-6 ${style.strikethrough ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`}
           >
             <span className="line-through">З</span>
           </Button>
