@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Download, X } from 'lucide-react';
@@ -15,57 +16,63 @@ const PWAInstaller: React.FC = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
-  const [isAndroid, setIsAndroid] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
-    console.log('PWAInstaller: Инициализация');
+    console.log('[PWA] Initializing PWA Installer');
     
     // Проверяем тип устройства
     const userAgent = navigator.userAgent.toLowerCase();
     const iOS = /ipad|iphone|ipod/.test(userAgent);
-    const android = /android/.test(userAgent);
-    
     setIsIOS(iOS);
-    setIsAndroid(android);
     
-    console.log('PWAInstaller: iOS:', iOS, 'Android:', android);
+    console.log('[PWA] Device check - iOS:', iOS);
 
     // Проверяем, установлено ли приложение
     const standalone = window.matchMedia('(display-mode: standalone)').matches || 
                       (window.navigator as any).standalone === true;
     
     setIsStandalone(standalone);
-    console.log('PWAInstaller: Standalone режим:', standalone);
+    console.log('[PWA] Standalone mode:', standalone);
 
-    // -- Only show install prompt if browser supports it, and not standalone --
+    // Обработчик события beforeinstallprompt
     const handleBeforeInstallPrompt = (e: Event) => {
+      console.log('[PWA] beforeinstallprompt event fired');
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setShowInstallBanner(true);
+      
+      // Показываем баннер только если не отклонен недавно
+      const wasRejected = localStorage.getItem('pwa-install-rejected');
+      const rejectedTime = wasRejected ? parseInt(wasRejected) : 0;
+      const dayInMs = 24 * 60 * 60 * 1000;
+      
+      if (!wasRejected || (Date.now() - rejectedTime >= dayInMs)) {
+        setShowInstallBanner(true);
+      }
     };
 
     // Обработчик установки приложения
     const handleAppInstalled = () => {
-      console.log('PWAInstaller: Приложение установлено');
+      console.log('[PWA] App installed successfully');
       setShowInstallBanner(false);
       setDeferredPrompt(null);
+      localStorage.removeItem('pwa-install-rejected');
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
 
-    // Adjust when to show: only if prompt supported or iOS/Android fallback
-    // Для всех устройств показываем баннер, если не standalone
-    // Enhance always showing for mobile if not standalone and not rejected
+    // Показываем баннер для iOS и других устройств, если не в standalone режиме
     if (!standalone) {
       setTimeout(() => {
         const wasRejected = localStorage.getItem('pwa-install-rejected');
         const rejectedTime = wasRejected ? parseInt(wasRejected) : 0;
         const dayInMs = 24 * 60 * 60 * 1000;
-        if (wasRejected && (Date.now() - rejectedTime < dayInMs)) return;
-        setShowInstallBanner(true);
-      }, 1000);
+        
+        if (!wasRejected || (Date.now() - rejectedTime >= dayInMs)) {
+          setShowInstallBanner(true);
+        }
+      }, 2000);
     }
 
     return () => {
@@ -75,42 +82,52 @@ const PWAInstaller: React.FC = () => {
   }, []);
 
   const handleInstallClick = async () => {
+    console.log('[PWA] Install button clicked', { deferredPrompt });
+    
     if (deferredPrompt) {
       try {
+        console.log('[PWA] Showing install prompt');
         await deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-          //
-        } else {
+        console.log('[PWA] User choice:', outcome);
+        
+        if (outcome === 'dismissed') {
           localStorage.setItem('pwa-install-rejected', Date.now().toString());
         }
+        
         setDeferredPrompt(null);
         setShowInstallBanner(false);
       } catch (error) {
-        // handle error
+        console.error('[PWA] Install prompt error:', error);
       }
+    } else {
+      console.log('[PWA] No deferred prompt available');
     }
   };
+
   const handleDismiss = () => {
+    console.log('[PWA] Banner dismissed');
     setShowInstallBanner(false);
     localStorage.setItem('pwa-install-rejected', Date.now().toString());
   };
 
-  if (isStandalone || !showInstallBanner) return null;
+  if (isStandalone || !showInstallBanner) {
+    return null;
+  }
 
   return (
-    <div className="fixed bottom-2 left-0 right-0 z-50 px-2">
-      <div className="bg-blue-600 text-white p-3 rounded-xl shadow-lg border border-blue-500 max-w-md mx-auto w-full">
+    <div className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-sm">
+      <div className="bg-blue-600 text-white p-4 rounded-lg shadow-lg border border-blue-500">
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1 pr-2">
-            <h3 className="font-semibold text-base mb-1">📱 Установить S-Lists</h3>
+            <h3 className="font-semibold text-sm mb-1">📱 Установить S-Lists</h3>
             {isIOS ? (
               <p className="text-xs opacity-90">
                 В Safari: <span className="font-semibold">Поделиться</span> → "На экран Домой"
               </p>
             ) : (
               <p className="text-xs opacity-90">
-                Установите приложение для работы офлайн
+                Установите для работы офлайн и быстрого доступа
               </p>
             )}
           </div>
@@ -124,18 +141,18 @@ const PWAInstaller: React.FC = () => {
           </Button>
         </div>
         
-        {/* Show install button as long as possible, not only with deferredPrompt */}
-        {(deferredPrompt || (!isIOS && !isStandalone && 'onbeforeinstallprompt' in window)) && (
+        {deferredPrompt && (
           <Button
             onClick={handleInstallClick}
             className="w-full bg-white text-blue-600 hover:bg-gray-100 text-sm py-2 h-8"
           >
             <Download className="h-3 w-3 mr-1" />
-            Установить
+            Установить приложение
           </Button>
         )}
-        {!deferredPrompt && isAndroid && (
-          <div className="text-xs opacity-80 mt-1">
+        
+        {!deferredPrompt && !isIOS && (
+          <div className="text-xs opacity-80">
             В Chrome: Меню → "Установить приложение"
           </div>
         )}
@@ -143,4 +160,5 @@ const PWAInstaller: React.FC = () => {
     </div>
   );
 };
+
 export default PWAInstaller;

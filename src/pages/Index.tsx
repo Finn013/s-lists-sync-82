@@ -11,30 +11,39 @@ const Index: React.FC = () => {
   useEffect(() => {
     // Регистрация service worker для PWA функциональности
     if ('serviceWorker' in navigator) {
-      console.log('Регистрация Service Worker...');
+      console.log('[SW] Registering Service Worker...');
+      
       navigator.serviceWorker.register('/s-lists-sync/sw.js', {
         scope: '/s-lists-sync/'
       })
         .then((registration) => {
-          console.log('Service Worker зарегистрирован успешно:', registration);
+          console.log('[SW] Service Worker registered successfully:', registration);
           
           // Проверяем обновления
           registration.addEventListener('updatefound', () => {
-            console.log('Найдено обновление Service Worker');
+            console.log('[SW] Service Worker update found');
+            const newWorker = registration.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  console.log('[SW] New Service Worker installed, prompting for reload');
+                }
+              });
+            }
           });
         })
         .catch((registrationError) => {
-          console.error('Ошибка регистрации Service Worker:', registrationError);
+          console.error('[SW] Service Worker registration failed:', registrationError);
         });
     } else {
-      console.log('Service Worker не поддерживается в этом браузере');
+      console.log('[SW] Service Worker not supported in this browser');
     }
 
     // Проверяем поддержку PWA
-    console.log('Проверка PWA возможностей:');
-    console.log('- beforeinstallprompt поддерживается:', 'onbeforeinstallprompt' in window);
-    console.log('- Service Worker поддерживается:', 'serviceWorker' in navigator);
-    console.log('- Cache API поддерживается:', 'caches' in window);
+    console.log('[PWA] Checking PWA capabilities:');
+    console.log('- beforeinstallprompt supported:', 'onbeforeinstallprompt' in window);
+    console.log('- Service Worker supported:', 'serviceWorker' in navigator);
+    console.log('- Cache API supported:', 'caches' in window);
     console.log('- User Agent:', navigator.userAgent);
     console.log('- Display mode:', window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser');
 
