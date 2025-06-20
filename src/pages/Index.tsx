@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import PasswordManager from '../components/PasswordManager';
-import ListManager from '../components/ListManager';
+import DynamicTabManager from '../components/DynamicTabManager';
 import PWAInstaller from '../components/PWAInstaller';
 
 const Index: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentTheme, setCurrentTheme] = useState('light');
 
   useEffect(() => {
     // Регистрация service worker для PWA функциональности
@@ -47,14 +48,25 @@ const Index: React.FC = () => {
     console.log('- User Agent:', navigator.userAgent);
     console.log('- Display mode:', window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser');
 
+    // Загружаем сохранённое состояние аутентификации
+    const savedAuth = localStorage.getItem('isAuthenticated');
+    if (savedAuth === 'true') {
+      setIsAuthenticated(true);
+    }
+
     // Симуляция времени загрузки
     setTimeout(() => {
       setIsLoading(false);
-    }, 2000);
+    }, 1000);
   }, []);
 
   const handleAuthenticated = () => {
     setIsAuthenticated(true);
+    localStorage.setItem('isAuthenticated', 'true');
+  };
+
+  const handleThemeChange = (theme: string) => {
+    setCurrentTheme(theme);
   };
 
   if (isLoading) {
@@ -74,14 +86,18 @@ const Index: React.FC = () => {
   }
 
   return (
-    <>
+    <div style={{ 
+      backgroundColor: `var(--theme-bg, #ffffff)`,
+      color: `var(--theme-text, #000000)`,
+      minHeight: '100vh'
+    }}>
       {!isAuthenticated ? (
         <PasswordManager onAuthenticated={handleAuthenticated} />
       ) : (
-        <ListManager />
+        <DynamicTabManager onThemeChange={handleThemeChange} />
       )}
       <PWAInstaller />
-    </>
+    </div>
   );
 };
 
