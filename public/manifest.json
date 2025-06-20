@@ -1,7 +1,7 @@
 
 {
-  "name": "S-Lists - Приложение для списков",
-  "short_name": "S-Lists",
+  "name": "NOTTE - Приложение для списков",
+  "short_name": "NOTTE",
   "description": "Приложение для создания и управления списками",
   "start_url": "/s-lists-sync/",
   "scope": "/s-lists-sync/",
