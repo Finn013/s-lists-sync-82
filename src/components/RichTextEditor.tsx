@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -234,7 +233,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         suppressContentEditableWarning={true}
       />
 
-      <style jsx>{`
+      <style>{`
         .hidden-tag {
           display: none !important;
         }
