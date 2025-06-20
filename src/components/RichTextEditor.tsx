@@ -205,7 +205,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
                   style={{ backgroundColor }}
                 />
               </Button>
-            </PopOverTrigger>
+            </PopoverTrigger>
             <PopoverContent className="w-auto">
               <div className="space-y-2">
                 <Label>Цвет фона</Label>
