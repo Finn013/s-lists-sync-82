@@ -33,5 +33,5 @@ export default defineConfig(({ mode }) => ({
       }
     }
   },
-  base: './'
+  base: '/s-lists-sync-82/'
 }));
