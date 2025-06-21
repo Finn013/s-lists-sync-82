@@ -14,8 +14,8 @@ const Index: React.FC = () => {
     if ('serviceWorker' in navigator) {
       console.log('[SW] Registering Service Worker...');
       
-      navigator.serviceWorker.register('/s-lists-sync/sw.js', {
-        scope: '/s-lists-sync/'
+      navigator.serviceWorker.register('/s-lists-sync-82/sw.js', {
+        scope: '/s-lists-sync-82/'
       })
         .then((registration) => {
           console.log('[SW] Service Worker registered successfully:', registration);

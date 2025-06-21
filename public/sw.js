@@ -1,6 +1,6 @@
 
-const CACHE_NAME = 's-list-app-v7';
-const BASE_PATH = '/s-lists-sync';
+const CACHE_NAME = 's-list-app-v8';
+const BASE_PATH = '/s-lists-sync-82';
 const urlsToCache = [
   `${BASE_PATH}/`,
   `${BASE_PATH}/index.html`,
