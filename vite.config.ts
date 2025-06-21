@@ -5,7 +5,7 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode, command }) => ({
   server: {
     host: "::",
     port: 8080,
@@ -33,5 +33,6 @@ export default defineConfig(({ mode }) => ({
       }
     }
   },
-  base: '/s-lists-sync-82/'
+  // Only use base path for production builds (GitHub Pages)
+  base: command === 'build' && process.env.NODE_ENV === 'production' ? '/s-lists-sync-82/' : '/'
 }));

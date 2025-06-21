@@ -9,12 +9,16 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+// Determine if we're in production GitHub Pages environment
+const isGitHubPages = import.meta.env.PROD && window.location.hostname === 'finn013.github.io';
+const basename = isGitHubPages ? "/s-lists-sync-82" : "";
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter basename="/s-lists-sync-82">
+      <BrowserRouter basename={basename}>
         <Routes>
           <Route path="/" element={<Index />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
