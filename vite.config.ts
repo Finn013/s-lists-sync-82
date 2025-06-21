@@ -33,6 +33,6 @@ export default defineConfig(({ mode, command }) => ({
       }
     }
   },
-  // Only use base path for production builds (GitHub Pages)
-  base: command === 'build' && process.env.NODE_ENV === 'production' ? '/s-lists-sync-82/' : '/'
+  // Use base path only for GitHub Pages production builds
+  base: command === 'build' && process.env.GITHUB_PAGES === 'true' ? '/s-lists-sync-82/' : '/'
 }));

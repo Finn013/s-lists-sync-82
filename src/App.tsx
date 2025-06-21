@@ -9,7 +9,7 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Determine if we're in production GitHub Pages environment
+// Only use base path for GitHub Pages in production
 const isGitHubPages = import.meta.env.PROD && window.location.hostname === 'finn013.github.io';
 const basename = isGitHubPages ? "/s-lists-sync-82" : "";
 

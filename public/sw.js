@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 's-list-app-v9';
+const CACHE_NAME = 's-list-app-v10';
 const urlsToCache = [
   './',
   './index.html',
