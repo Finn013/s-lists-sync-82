@@ -1,11 +1,13 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Bold, Italic, Underline, Strikethrough, List, ListOrdered, Table, Palette, Type } from 'lucide-react';
+import { Bold, Italic, Underline, Strikethrough, List, ListOrdered, Table, Palette, Type, Plus, Minus } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 interface RichTextEditorProps {
   value: string;
@@ -21,20 +23,38 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   onBackgroundColorChange
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
+  const currentContentRef = useRef<string>('');
   const [fontSize, setFontSize] = useState(14);
   const [textColor, setTextColor] = useState('#000000');
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showBgColorPicker, setShowBgColorPicker] = useState(false);
+  const [showTableDialog, setShowTableDialog] = useState(false);
+  const [tableRows, setTableRows] = useState(2);
+  const [tableCols, setTableCols] = useState(2);
 
+  // Дебаунсинг для обновления состояния
   useEffect(() => {
-    if (editorRef.current) {
+    const timer = setTimeout(() => {
+      if (currentContentRef.current !== value) {
+        const tags = extractTags(currentContentRef.current);
+        onChange(currentContentRef.current, tags);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [currentContentRef.current]);
+
+  // Установка содержимого при смене заметки
+  useEffect(() => {
+    if (editorRef.current && value !== currentContentRef.current) {
       editorRef.current.innerHTML = processTagsForDisplay(value);
+      currentContentRef.current = value;
     }
   }, [value]);
 
   const processTagsForDisplay = (text: string) => {
-    // Скрываем ### теги, но сохраняем их для поиска
-    return text.replace(/###([^.]*\.)/, '<span class="hidden-tag" data-tag="$1">$1</span>');
+    // Скрываем ### теги, но оставляем текст на месте
+    return text.replace(/###([^.]*\.)/g, '<span class="hidden-tag" style="display: none;">###</span>$1');
   };
 
   const extractTags = (text: string): string[] => {
@@ -49,22 +69,53 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     return tags;
   };
 
+  const saveCaretPosition = () => {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      return {
+        startContainer: range.startContainer,
+        startOffset: range.startOffset,
+        endContainer: range.endContainer,
+        endOffset: range.endOffset
+      };
+    }
+    return null;
+  };
+
+  const restoreCaretPosition = (caretPos: any) => {
+    if (caretPos && editorRef.current) {
+      try {
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.setStart(caretPos.startContainer, caretPos.startOffset);
+        range.setEnd(caretPos.endContainer, caretPos.endOffset);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+      } catch (e) {
+        console.log('Could not restore caret position:', e);
+      }
+    }
+  };
+
   const handleInput = () => {
     if (editorRef.current) {
-      let content = editorRef.current.innerHTML;
+      const caretPos = saveCaretPosition();
+      currentContentRef.current = editorRef.current.innerHTML;
       
-      // Преобразуем ### теги в невидимые
-      content = content.replace(/###([^.]*\.)/g, '<span class="hidden-tag" data-tag="$1" style="display: none;">$1</span>');
-      
-      const plainText = editorRef.current.innerText || '';
-      const tags = extractTags(plainText);
-      
-      onChange(content, tags);
+      // Обработка тегов в реальном времени
+      const processedContent = processTagsForDisplay(currentContentRef.current);
+      if (editorRef.current.innerHTML !== processedContent) {
+        editorRef.current.innerHTML = processedContent;
+        restoreCaretPosition(caretPos);
+      }
     }
   };
 
   const execCommand = (command: string, value?: string) => {
+    const caretPos = saveCaretPosition();
     document.execCommand(command, false, value);
+    setTimeout(() => restoreCaretPosition(caretPos), 0);
     handleInput();
   };
 
@@ -80,26 +131,51 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     execCommand('foreColor', color);
   };
 
-  const insertTable = () => {
-    const table = `
-      <table border="1" style="border-collapse: collapse; width: 100%;">
-        <tr>
-          <td style="padding: 8px;">Ячейка 1</td>
-          <td style="padding: 8px;">Ячейка 2</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px;">Ячейка 3</td>
-          <td style="padding: 8px;">Ячейка 4</td>
-        </tr>
-      </table>
+  const createTable = () => {
+    let tableHTML = '<table border="1" style="border-collapse: collapse; width: 100%; margin: 10px 0;">';
+    
+    for (let i = 0; i < tableRows; i++) {
+      tableHTML += '<tr>';
+      for (let j = 0; j < tableCols; j++) {
+        tableHTML += `<td style="padding: 8px; border: 1px solid #ccc; min-width: 100px;" contenteditable="true">
+          ${i === 0 ? `Заголовок ${j + 1}` : `Ячейка ${j + 1}`}
+          <button onclick="addRowAbove(this)" style="display: none;" class="table-btn">+▲</button>
+          <button onclick="addRowBelow(this)" style="display: none;" class="table-btn">+▼</button>
+          <button onclick="addColLeft(this)" style="display: none;" class="table-btn">+◄</button>
+          <button onclick="addColRight(this)" style="display: none;" class="table-btn">+►</button>
+          <button onclick="deleteRow(this)" style="display: none;" class="table-btn">-▲</button>
+          <button onclick="deleteCol(this)" style="display: none;" class="table-btn">-◄</button>
+        </td>`;
+      }
+      tableHTML += '</tr>';
+    }
+    tableHTML += '</table>';
+    
+    execCommand('insertHTML', tableHTML);
+    setShowTableDialog(false);
+  };
+
+  const insertSeparator = () => {
+    const separatorHTML = `
+      <div class="separator-block" style="
+        margin: 20px 0; 
+        padding: 10px; 
+        background: linear-gradient(90deg, #e5e7eb 0%, #d1d5db 50%, #e5e7eb 100%); 
+        border-radius: 8px; 
+        text-align: center;
+        font-weight: bold;
+        color: #374151;
+      " contenteditable="true">
+        Новый разделитель
+      </div>
     `;
-    execCommand('insertHTML', table);
+    execCommand('insertHTML', separatorHTML);
   };
 
   return (
-    <div className="border rounded-lg">
+    <div className="border rounded-lg" style={{ backgroundColor: 'var(--theme-bg)', color: 'var(--theme-text)' }}>
       {/* Панель инструментов */}
-      <div className="flex flex-wrap gap-1 p-2 border-b bg-gray-50">
+      <div className="flex flex-wrap gap-1 p-2 border-b" style={{ backgroundColor: 'var(--theme-primary)', opacity: 0.1 }}>
         <Toggle
           pressed={document.queryCommandState('bold')}
           onPressedChange={() => execCommand('bold')}
@@ -153,9 +229,18 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         <Button
           variant="outline"
           size="sm"
-          onClick={insertTable}
+          onClick={() => setShowTableDialog(true)}
         >
           <Table size={16} />
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={insertSeparator}
+          title="Добавить разделитель"
+        >
+          <Separator className="w-4 h-4" />
         </Button>
 
         <Separator orientation="vertical" className="h-8" />
@@ -233,6 +318,47 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         suppressContentEditableWarning={true}
       />
 
+      {/* Диалог создания таблицы */}
+      <Dialog open={showTableDialog} onOpenChange={setShowTableDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Создать таблицу</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="rows">Количество строк:</Label>
+              <Input
+                id="rows"
+                type="number"
+                min="1"
+                max="20"
+                value={tableRows}
+                onChange={(e) => setTableRows(Number(e.target.value))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="cols">Количество столбцов:</Label>
+              <Input
+                id="cols"
+                type="number"
+                min="1"
+                max="10"
+                value={tableCols}
+                onChange={(e) => setTableCols(Number(e.target.value))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTableDialog(false)}>
+              Отмена
+            </Button>
+            <Button onClick={createTable}>
+              Создать таблицу
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <style>{`
         .hidden-tag {
           display: none !important;
@@ -248,13 +374,103 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           border: 1px solid #ccc;
           padding: 8px;
           min-width: 100px;
+          position: relative;
+        }
+        
+        [contenteditable] table td:hover .table-btn {
+          display: inline-block !important;
+          position: absolute;
+          background: #007bff;
+          color: white;
+          border: none;
+          padding: 2px 4px;
+          font-size: 10px;
+          cursor: pointer;
+          z-index: 1000;
         }
         
         [contenteditable] ul, [contenteditable] ol {
           margin: 10px 0;
           padding-left: 30px;
         }
+        
+        .separator-block {
+          margin: 20px 0;
+          padding: 10px;
+          background: linear-gradient(90deg, #e5e7eb 0%, #d1d5db 50%, #e5e7eb 100%);
+          border-radius: 8px;
+          text-align: center;
+          font-weight: bold;
+          color: #374151;
+          cursor: pointer;
+        }
+        
+        .separator-block:hover {
+          background: linear-gradient(90deg, #d1d5db 0%, #9ca3af 50%, #d1d5db 100%);
+        }
       `}</style>
+
+      <script>{`
+        window.addRowAbove = function(btn) {
+          const td = btn.parentElement;
+          const tr = td.parentElement;
+          const newRow = tr.cloneNode(true);
+          newRow.querySelectorAll('td').forEach(cell => cell.innerHTML = 'Новая ячейка');
+          tr.parentElement.insertBefore(newRow, tr);
+        };
+        
+        window.addRowBelow = function(btn) {
+          const td = btn.parentElement;
+          const tr = td.parentElement;
+          const newRow = tr.cloneNode(true);
+          newRow.querySelectorAll('td').forEach(cell => cell.innerHTML = 'Новая ячейка');
+          tr.parentElement.insertBefore(newRow, tr.nextSibling);
+        };
+        
+        window.addColLeft = function(btn) {
+          const td = btn.parentElement;
+          const table = td.closest('table');
+          const colIndex = Array.from(td.parentElement.children).indexOf(td);
+          table.querySelectorAll('tr').forEach(row => {
+            const newCell = document.createElement('td');
+            newCell.innerHTML = 'Новая ячейка';
+            newCell.style.cssText = 'padding: 8px; border: 1px solid #ccc; min-width: 100px;';
+            row.insertBefore(newCell, row.children[colIndex]);
+          });
+        };
+        
+        window.addColRight = function(btn) {
+          const td = btn.parentElement;
+          const table = td.closest('table');
+          const colIndex = Array.from(td.parentElement.children).indexOf(td);
+          table.querySelectorAll('tr').forEach(row => {
+            const newCell = document.createElement('td');
+            newCell.innerHTML = 'Новая ячейка';
+            newCell.style.cssText = 'padding: 8px; border: 1px solid #ccc; min-width: 100px;';
+            row.insertBefore(newCell, row.children[colIndex + 1]);
+          });
+        };
+        
+        window.deleteRow = function(btn) {
+          const tr = btn.parentElement.parentElement;
+          if (tr.parentElement.children.length > 1) {
+            tr.remove();
+          }
+        };
+        
+        window.deleteCol = function(btn) {
+          const td = btn.parentElement;
+          const table = td.closest('table');
+          const colIndex = Array.from(td.parentElement.children).indexOf(td);
+          if (table.querySelector('tr').children.length > 1) {
+            table.querySelectorAll('tr').forEach(row => {
+              if (row.children[colIndex]) {
+                row.children[colIndex].remove();
+              }
+            });
+          }
+        };
+      `}</script>
     </div>
   );
 };

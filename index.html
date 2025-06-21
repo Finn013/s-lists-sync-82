@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -11,31 +12,43 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <!-- Apple icon -->
-    <link rel="apple-touch-icon" href="/s-lists-sync-82/icon-192.png">
-    <!-- Use correct manifest path for github pages -->
-    <link rel="manifest" href="/s-lists-sync-82/manifest.json">
-    <link rel="icon" type="image/png" sizes="48x48" href="/s-lists-sync-82/icon-48.png">
-    <link rel="icon" type="image/png" sizes="72x72" href="/s-lists-sync-82/icon-72.png">
-    <link rel="icon" type="image/png" sizes="96x96" href="/s-lists-sync-82/icon-96.png">
-    <link rel="icon" type="image/png" sizes="144x144" href="/s-lists-sync-82/icon-144.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="/s-lists-sync-82/icon-192.png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <!-- Manifest path -->
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/png" sizes="48x48" href="./icon-48.png">
+    <link rel="icon" type="image/png" sizes="72x72" href="./icon-72.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="./icon-96.png">
+    <link rel="icon" type="image/png" sizes="144x144" href="./icon-144.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
     <!-- Better color for ms -->
     <meta name="msapplication-TileColor" content="#2563eb">
     <meta name="msapplication-config" content="none">
     <style>
+      :root {
+        --theme-bg: #ffffff;
+        --theme-text: #000000;
+        --theme-primary: #2563eb;
+      }
+      
       body {
         -webkit-text-size-adjust: 100%;
         -ms-text-size-adjust: 100%;
         overflow-x: hidden;
+        background-color: var(--theme-bg);
+        color: var(--theme-text);
+        transition: background-color 0.3s ease, color 0.3s ease;
       }
+      
       #root, html, body {
         min-width: 0 !important;
         box-sizing: border-box;
       }
+      
       /* prevent iOS zoom */
       input, textarea, select {
         font-size: 16px !important;
       }
+      
       @media screen and (max-width: 600px) {
         .shadcn-DialogContent,
         .shadcn_DialogContent,
@@ -132,13 +145,13 @@
         </div>
     </div>
 
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" src="./src/main.tsx"></script>
     <script>
       // PWA Service Worker registration
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/s-lists-sync-82/sw.js', {
-            scope: '/s-lists-sync-82/'
+          navigator.serviceWorker.register('./sw.js', {
+            scope: './'
           }).then(function(registration) {
             console.log('ServiceWorker registration successful with scope: ', registration.scope);
             
